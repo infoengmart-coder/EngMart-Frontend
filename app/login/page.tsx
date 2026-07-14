@@ -2,21 +2,33 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useAuth } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  
+  const { login } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
+    const ok = await login(form.email, form.password)
     setLoading(false)
-    setSuccess(true)
+    if (ok) {
+      setSuccess(true)
+      setTimeout(() => {
+        router.push('/account')
+      }, 1000)
+    }
   }
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex transition-colors">
@@ -24,13 +36,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-between px-6 sm:px-10 lg:px-12 py-10 max-w-xl mx-auto lg:mx-0 w-full">
         {/* Top nav */}
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 mb-10 group">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="text-white font-black text-base">E</span>
-            </div>
-            <span className="text-[17px] font-black tracking-tight text-slate-900">
-              Eng<span className="text-primary">-Mart</span>
-            </span>
+          <Link href="/" className="inline-block mb-10">
+            <Image src="/header_logo.png" alt="Eng-Mart" width={140} height={36} className="h-9 w-auto" />
           </Link>
 
           {success ? (
@@ -42,13 +49,13 @@ export default function LoginPage() {
               <div className="w-20 h-20 rounded-3xl bg-emerald-50 flex items-center justify-center text-4xl mx-auto mb-6 border border-emerald-100">✅</div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome back!</h2>
               <p className="text-slate-500 mb-8 text-sm">You've been signed in successfully.</p>
-              <Link href="/" className="btn-premium-primary text-xs px-6 py-3 justify-center mx-auto inline-flex">Go to Home</Link>
+              <Link href="/" className="btn-primary text-xs px-6 py-3 justify-center mx-auto inline-flex">Go to Home</Link>
             </motion.div>
           ) : (
             <>
               <div className="mb-8">
                 <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">Welcome Back</span>
-                <h1 className="text-3xl sm:text-4xl text-slate-900 mb-2 font-black leading-tight tracking-tight">Sign in to<br /><span className="text-gradient-cyan">your account</span></h1>
+                <h1 className="text-2xl sm:text-3xl text-slate-900 mb-2 font-extrabold leading-tight tracking-tight">Sign in to your account</h1>
                 <p className="text-slate-400 text-xs font-semibold">
                   Don't have an account?{' '}
                   <Link href="/register" className="text-primary font-bold hover:underline transition-all">Create one →</Link>
@@ -127,7 +134,7 @@ export default function LoginPage() {
                 <motion.button
                   type="submit"
                   disabled={loading}
-                  className="btn-premium-primary w-full py-3.5 text-xs font-bold justify-center shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="btn-primary w-full py-3.5 text-xs font-bold justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                   whileHover={{ scale: loading ? 1 : 1.01 }}
                   whileTap={{ scale: loading ? 1 : 0.99 }}
                 >
@@ -150,18 +157,16 @@ export default function LoginPage() {
       {/* Right: Visual panel */}
       <div className="hidden lg:flex flex-1 bg-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.15),transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-0 grid-pattern opacity-15 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col justify-center p-16 max-w-xl text-white">
-          <div className="w-12 h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-xl mb-8 text-primary">
-            ⚡
+          <div className="mb-6">
+            <Image src="/header_logo.png" alt="Eng-Mart" width={140} height={36} className="h-9 w-auto brightness-0 invert" />
           </div>
-          <h2 className="text-3xl font-black mb-4 leading-tight">
-            Industrial grade products,<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">enterprise grade platform.</span>
+          <h2 className="text-2xl font-extrabold mb-3 leading-tight">
+            Your B2B Electrical Supply Portal
           </h2>
-          <p className="text-slate-455 text-sm leading-relaxed mb-10">
-            Sign in to track your orders, access your quote history, and manage your B2B account with Eng-Mart.
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            Sign in to access your order history, formal quotations, and wholesale pricing tiers. Trusted by panel builders and electrical contractors across Karachi.
           </p>
 
           {/* Feature list */}

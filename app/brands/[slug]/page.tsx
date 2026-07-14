@@ -8,11 +8,19 @@ import { BRANDS, FEATURED_PRODUCTS, CATEGORIES } from '@/lib/data'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { useCart } from '@/lib/cart'
+import * as Lucide from 'lucide-react'
 
-const CATEGORY_ICONS: Record<string, string> = {
-  MCBs: '⚡', MCCBs: '🔌', Contactors: '🔧',
-  'Current Transformers': '🔄', 'Panel Meters': '📊',
-  Capacitors: '⚙️', 'Industrial Sockets': '🔌',
+const CATEGORY_LUCIDE_ICONS: Record<string, string> = {
+  MCBs: 'Zap',
+  MCCBs: 'Power',
+  Contactors: 'Boxes',
+  'Current Transformers': 'RefreshCw',
+  'Panel Meters': 'Gauge',
+  Capacitors: 'Cpu',
+  'Industrial Sockets': 'Plug',
+  'Variable Frequency Drives': 'Sliders',
+  'Protection Relays': 'ShieldCheck',
+  'Cam Switches': 'RotateCw'
 }
 
 const BRAND_DETAILS: Record<string, {
@@ -88,12 +96,19 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
 
   const { add, isInCart } = useCart()
 
+  const renderCategoryIcon = (categoryName: string, className: string = "w-5 h-5") => {
+    const iconName = CATEGORY_LUCIDE_ICONS[categoryName] || 'Zap'
+    // @ts-ignore
+    const IconComp = Lucide[iconName] || Lucide.Zap
+    return <IconComp className={className} />
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 transition-colors">
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-32 pb-16 border-b border-slate-200/60 bg-slate-900 text-white">
+      <section className="relative overflow-hidden pt-14 pb-16 border-b border-slate-200/60 bg-slate-900 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.15),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 grid-pattern opacity-20" />
         <div
@@ -113,10 +128,14 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
             {/* Brand logo box */}
             <div
-              className="w-24 h-24 rounded-3xl flex items-center justify-center text-white text-4xl font-black flex-shrink-0 border border-white/10"
-              style={{ background: `${brand.color}22`, borderColor: `${brand.color}40` }}
+              className="w-24 h-24 rounded-3xl flex items-center justify-center text-4xl font-black flex-shrink-0 border border-white/10"
+              style={{ background: `${brand.color}22`, borderColor: `${brand.color}40`, color: brand.color }}
             >
-              <span style={{ color: brand.color }}>{brand.name.charAt(0)}</span>
+              {(() => {
+                // @ts-ignore
+                const IconComponent = Lucide[brand.icon || 'Zap'] || Lucide.Zap
+                return <IconComponent className="w-10 h-10" />
+              })()}
             </div>
 
             <div>
@@ -146,12 +165,12 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
             {/* About */}
             <div className="bg-white rounded-3xl border border-slate-200/60 p-6 sm:p-8 shadow-sm">
               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">About the Brand</span>
-              <p className="text-slate-600 text-sm leading-relaxed">{details.about}</p>
+              <p className="text-slate-650 text-sm leading-relaxed font-semibold">{details.about}</p>
             </div>
 
             {/* Strengths */}
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Key Product Lines</span>
+              <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block mb-4">Key Product Lines</span>
               <div className="grid sm:grid-cols-2 gap-4">
                 {details.strengths.map((s, i) => (
                   <div key={i} className="flex items-start gap-3 p-5 rounded-2xl bg-white border border-slate-200/60 hover:border-primary/20 transition-all duration-300 shadow-sm hover:shadow-md group">
@@ -165,7 +184,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
             {/* Featured products */}
             {brandProducts.length > 0 && (
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Featured Products</span>
+                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block mb-4">Featured Products</span>
                 <div className="grid sm:grid-cols-2 gap-6">
                   {brandProducts.map((product, idx) => {
                     const inCart = isInCart(product.slug)
@@ -177,21 +196,21 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
                         transition={{ delay: idx * 0.05 }}
                         className="group bg-white rounded-3xl border border-slate-200/60 overflow-hidden hover:border-primary/35 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-[320px]"
                       >
-                        <div className="h-36 bg-slate-50 flex items-center justify-center text-4xl flex-shrink-0 relative border-b border-slate-100">
-                          {CATEGORY_ICONS[product.category] || '⚡'}
+                        <div className="h-36 bg-slate-50 flex items-center justify-center flex-shrink-0 relative border-b border-slate-105/50 text-slate-400">
+                          {renderCategoryIcon(product.category, "w-10 h-10")}
                         </div>
                         <div className="p-5 flex flex-col justify-between flex-1">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">{product.category}</p>
                             <h3 className="text-sm font-bold text-slate-900 mb-0.5 group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
-                            <p className="text-[10px] font-mono text-slate-400">Cat: {product.catNo}</p>
+                            <p className="text-[10px] font-mono text-slate-405">Cat: {product.catNo}</p>
                           </div>
                           <div className="flex gap-2 mt-4">
                             <button
                               onClick={() => add({ slug: product.slug, name: product.name, brand: product.brand, category: product.category, catNo: product.catNo, badge: product.badge, badgeColor: product.badgeColor })}
                               className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                 inCart 
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-250' 
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
                                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-primary/10 hover:text-primary hover:border-primary/20'
                               }`}
                             >
@@ -211,7 +230,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
 
             {/* Categories this brand covers */}
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Available Categories</span>
+              <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block mb-4">Available Categories</span>
               <div className="flex flex-wrap gap-2">
                 {brandCategories.map(cat => (
                   <Link
@@ -219,7 +238,9 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
                     href={`/categories/${cat.slug}`}
                     className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-slate-200/60 hover:border-primary/30 transition-all shadow-sm hover:shadow-md group"
                   >
-                    <span className="text-sm">{cat.icon}</span>
+                    <span className="text-slate-400 group-hover:text-primary transition-colors">
+                      {renderCategoryIcon(cat.short, "w-4 h-4")}
+                    </span>
                     <span className="text-xs font-bold text-slate-700 group-hover:text-primary transition-colors">{cat.short}</span>
                     <span className="text-[10px] font-mono text-slate-400">{cat.count}+</span>
                   </Link>
@@ -241,7 +262,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
                   { label: 'Categories', value: `${brandCategories.length} categories` },
                 ].map((row, i) => (
                   <div key={i} className="flex justify-between items-start py-2.5 border-b border-slate-100 last:border-0">
-                    <span className="text-xs text-slate-400">{row.label}</span>
+                    <span className="text-xs text-slate-450">{row.label}</span>
                     <span className="text-xs font-bold text-slate-800 text-right">{row.value}</span>
                   </div>
                 ))}
@@ -264,7 +285,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
               <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
               <div className="relative z-10">
                 <p className="text-sm font-bold text-white mb-1">Need {brand.name} products?</p>
-                <p className="text-xs text-slate-400 mb-5 leading-relaxed">Get pricing, datasheets, and bulk quotes for {brand.name} in Pakistan.</p>
+                <p className="text-xs text-slate-400 mb-5 leading-relaxed font-semibold">Get pricing, datasheets, and bulk quotes for {brand.name} in Pakistan.</p>
                 
                 <Link href="/contact" className="btn-premium-primary text-xs w-full py-3.5 shadow-lg shadow-primary/20">
                   Request B2B Quote

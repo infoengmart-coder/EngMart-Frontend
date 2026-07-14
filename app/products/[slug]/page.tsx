@@ -84,21 +84,15 @@ function ProductImageGallery({ category, badge, badgeColor, brand }: {
     <div className="space-y-3 w-full min-w-0 max-w-full">
       {/* Main image */}
       <motion.div
-        className="relative w-full rounded-2xl overflow-hidden cursor-zoom-in border border-[#E7E4DF] dark:border-[#334155] group"
-        style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)' }}
+        className="relative w-full rounded-lg overflow-hidden cursor-zoom-in border border-border group"
+        style={{ background: 'var(--secondary)' }}
         onClick={() => setZoom(!zoom)}
-        whileHover={{ scale: 1.01 }}
         transition={{ duration: 0.2 }}
       >
         <div className="h-56 sm:h-80 lg:h-96 flex items-center justify-center relative">
-          {/* Grid pattern */}
-          <div className="absolute inset-0 pattern-grid-dark opacity-40" />
-          {/* Glow */}
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.15) 0%, transparent 70%)' }} />
-
           {/* Icon */}
           <motion.span
-            className="text-[5rem] sm:text-[9rem] relative z-10 select-none filter drop-shadow-lg"
+            className="text-[5rem] sm:text-[9rem] relative z-10 select-none"
             animate={{ scale: zoom ? 1.15 : 1 }}
             transition={{ duration: 0.3 }}
           >
@@ -106,28 +100,20 @@ function ProductImageGallery({ category, badge, badgeColor, brand }: {
           </motion.span>
 
           {/* Badge */}
-          <motion.div
-            className="absolute top-4 left-4 text-white text-xs font-bold px-3 py-1.5 rounded-xl z-20"
+          <div
+            className="absolute top-3 left-3 text-white text-[10px] font-bold px-2.5 py-1 rounded-md z-20"
             style={{ background: badgeColor }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
           >
             {badge}
-          </motion.div>
+          </div>
 
           {/* Brand */}
-          <motion.div
-            className="absolute top-4 right-4 bg-white/10 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-white/20 z-20"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+          <div className="absolute top-3 right-3 bg-card text-foreground text-[10px] font-bold px-2.5 py-1 rounded-md border border-border z-20">
             {brand}
-          </motion.div>
+          </div>
 
           {/* Zoom hint */}
-          <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-1 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+          <div className="absolute bottom-3 right-3 bg-card/80 text-muted-foreground text-[10px] font-medium px-2 py-0.5 rounded border border-border opacity-0 group-hover:opacity-100 transition-opacity z-20">
             {zoom ? 'Click to reset' : 'Click to zoom'}
           </div>
         </div>
@@ -136,17 +122,14 @@ function ProductImageGallery({ category, badge, badgeColor, brand }: {
       {/* Thumb grid */}
       <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full min-w-0">
         {[0, 1, 2, 3].map((i) => (
-          <motion.div
+          <div
             key={i}
-            className="aspect-square min-w-0 rounded-xl flex items-center justify-center text-xl sm:text-2xl cursor-pointer border-2 transition-colors duration-200"
-            style={{ background: 'linear-gradient(135deg, #0F172A, #1E293B)' }}
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.15 }}
-            initial={{ borderColor: i === 0 ? '#2563EB' : '#334155' }}
-            animate={{ borderColor: i === 0 ? '#2563EB' : '#334155' }}
+            className={`aspect-square min-w-0 rounded-lg flex items-center justify-center text-xl sm:text-2xl cursor-pointer border-2 transition-colors duration-200 bg-secondary ${
+              i === 0 ? 'border-primary' : 'border-border hover:border-primary/40'
+            }`}
           >
             <span className="text-xl select-none">{icon}</span>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
@@ -205,44 +188,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 overflow-x-hidden w-full max-w-[100vw] pt-24">
+    <div className="min-h-screen bg-secondary/30 overflow-x-hidden w-full max-w-[100vw]">
       <Navbar />
 
-      {/* ── PROMO BANNER ── */}
-      <motion.div
-        className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border-b border-[#334155] overflow-hidden relative"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="absolute inset-0 pattern-dots opacity-30" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 relative z-10">
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs">
-            {[
-              { icon: '🚚', text: 'Free delivery on orders above PKR 50,000 in Karachi' },
-              { icon: '✅', text: '100% Genuine Products — Manufacturer Warranty' },
-              { icon: '📋', text: 'Formal Quotations Available for Procurement' },
-            ].map((item, i) => (
-              <span key={i} className="flex items-center gap-1.5 text-gray-300 font-medium">
-                <span>{item.icon}</span>
-                {item.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
       {/* ── BREADCRUMB ── */}
-      <div className="bg-[#F5F4F0] dark:bg-[#1E293B] border-b border-[#E7E4DF] dark:border-[#334155] py-3">
+      <div className="bg-card border-b border-border py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
-          <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-400">
-            <Link href="/" className="hover:text-[#2563EB] transition-colors">Home</Link>
-            <span className="text-gray-300 dark:text-gray-600">/</span>
-            <Link href="/products" className="hover:text-[#2563EB] transition-colors">Products</Link>
-            <span className="text-gray-300 dark:text-gray-600">/</span>
-            <Link href={`/categories/${p.category.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#2563EB] transition-colors">{p.category}</Link>
-            <span className="text-gray-300 dark:text-gray-600">/</span>
-            <span className="text-gray-700 dark:text-gray-300 font-medium truncate">{p.catNo}</span>
+          <nav className="breadcrumb flex-wrap">
+            <Link href="/">Home</Link>
+            <span className="breadcrumb-separator">/</span>
+            <Link href="/products">Products</Link>
+            <span className="breadcrumb-separator">/</span>
+            <Link href={`/categories/${p.category.toLowerCase().replace(/\s+/g, '-')}`}>{p.category}</Link>
+            <span className="breadcrumb-separator">/</span>
+            <span className="breadcrumb-current truncate">{p.catNo}</span>
           </nav>
         </div>
       </div>
@@ -272,37 +231,33 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 href={`https://wa.me/+923112763951?text=I'm interested in ${encodeURIComponent(p.name)} (${p.catNo}). Please provide pricing.`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 sm:py-3.5 px-3 text-xs sm:text-sm font-bold text-white rounded-2xl relative overflow-hidden group min-w-0 w-full"
-                style={{ background: '#25D366' }}
-                whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(37,211,102,0.35)' }}
+                className="btn-secondary flex items-center justify-center gap-2 py-3 sm:py-3.5 px-3 w-full"
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
-                <svg className="w-4 h-4 relative z-10 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                 </svg>
-                <span className="relative z-10 truncate">WhatsApp Inquiry</span>
+                <span className="truncate text-foreground font-bold text-xs sm:text-sm">WhatsApp Inquiry</span>
               </motion.a>
 
               <motion.button
                 onClick={() => setActiveTab('inquiry')}
-                className="flex items-center justify-center gap-2 py-3 sm:py-3.5 px-3 text-xs sm:text-sm font-bold text-white rounded-2xl relative overflow-hidden group min-w-0 w-full"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
-                whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(37,99,235,0.4)' }}
+                className="btn-primary flex items-center justify-center gap-2 py-3 sm:py-3.5 px-3 w-full"
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
-                <svg className="w-4 h-4 relative z-10 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="relative z-10">Get Quote</span>
+                <span className="truncate font-bold text-xs sm:text-sm">Get Quote</span>
               </motion.button>
             </div>
 
             {/* Trust badges */}
             <div className="flex flex-wrap gap-2 mt-4 w-full min-w-0">
               {['✅ Genuine Product', '🛡️ Warranty Included', '📦 Karachi Stock'].map((b, i) => (
-                <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-[#F5F4F0] dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 font-medium border border-[#E7E4DF] dark:border-[#334155]">
+                <span key={i} className="text-[10px] px-2.5 py-1 rounded bg-secondary text-muted-foreground font-semibold border border-border">
                   {b}
                 </span>
               ))}
@@ -318,8 +273,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
           >
             {/* Badges row */}
             <div className="flex flex-wrap gap-2 mb-4 w-full min-w-0">
-              <span className="badge-orange">{p.category}</span>
-              <span className="badge-navy">{p.brand}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{p.category}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-secondary text-foreground border border-border">{p.brand}</span>
               {p.badge && (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold text-white uppercase tracking-wider"
@@ -340,118 +295,82 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-5 break-words">{p.description}</p>
 
             {/* ── PRICE IN PKR ── */}
-            <div className="my-5 p-4 sm:p-5 rounded-2xl bg-[#F5F4F0] dark:bg-[#1E293B] border border-[#E7E4DF] dark:border-[#334155] relative overflow-hidden w-full min-w-0">
-              <div className="absolute inset-0 animate-shimmer" />
-              <div className="relative z-10">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Price (PKR)</p>
-                {pkrRange ? (
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="text-2xl sm:text-3xl font-black text-orange-500">
-                      {formatPKR(pkrRange.min)}
-                    </span>
-                    <span className="text-gray-400">–</span>
-                    <span className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300">
-                      {formatPKR(pkrRange.max)}
-                    </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500 w-full sm:w-auto sm:ml-1">(varies by variant)</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">Price on Request</span>
-                    <span className="badge-orange text-xs">Contact for Pricing</span>
-                  </div>
-                )}
-                {pkrRange && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    All prices include GST. Final pricing may vary based on quantity & variant.
-                  </p>
-                )}
-              </div>
+            <div className="my-5 p-4 sm:p-5 rounded-lg bg-secondary border border-border w-full min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Price (PKR)</p>
+              {pkrRange ? (
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-foreground">
+                    {formatPKR(pkrRange.min)}
+                  </span>
+                  <span className="text-muted-foreground">–</span>
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
+                    {formatPKR(pkrRange.max)}
+                  </span>
+                  <span className="text-xs text-muted-foreground w-full sm:w-auto sm:ml-1">(varies by variant)</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">Price on Request</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">Contact for Pricing</span>
+                </div>
+              )}
+              {pkrRange && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  All prices include GST. Final pricing may vary based on quantity &amp; variant.
+                </p>
+              )}
             </div>
 
             {/* Key specs grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5 w-full min-w-0">
               {p.specs.slice(0, 4).map((spec, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-[#1E293B] rounded-xl px-3 py-2.5 border border-[#E7E4DF] dark:border-[#334155] min-w-0"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + idx * 0.06 }}
+                  className="flex items-start gap-2 store-card px-3 py-2.5 min-w-0"
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB] flex-shrink-0 mt-1.5" />
-                  <span className="text-xs font-medium break-words min-w-0">{spec}</span>
-                </motion.div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                  <span className="text-xs font-medium text-muted-foreground break-words min-w-0">{spec}</span>
+                </div>
               ))}
             </div>
 
             {/* ── ADD TO CART ── */}
             <div className="mb-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Quantity</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Quantity</p>
               <div className="flex flex-wrap items-center gap-3 mb-4 w-full min-w-0">
-                <div className="flex items-center rounded-xl border border-[#E7E4DF] dark:border-[#334155] overflow-hidden bg-white dark:bg-[#1E293B] shrink-0">
-                  <button
-                    onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-blue-50 dark:hover:bg-[#2563EB]/10 transition-colors font-bold text-lg"
-                  >
-                    −
-                  </button>
-                  <span className="w-10 text-center font-bold text-gray-900 dark:text-white text-sm">{qty}</span>
-                  <button
-                    onClick={() => setQty(q => q + 1)}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-blue-50 dark:hover:bg-[#2563EB]/10 transition-colors font-bold text-lg"
-                  >
-                    +
-                  </button>
+                <div className="qty-stepper shrink-0">
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
+                  <span>{qty}</span>
+                  <button onClick={() => setQty(q => q + 1)}>+</button>
                 </div>
                 {pkrRange && (
-                  <div className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 break-words min-w-0">
-                    Est. Total: <span className="text-orange-500">{formatPKR(pkrRange.min * qty)}</span>
-                    <span className="text-gray-400 font-normal"> – {formatPKR(pkrRange.max * qty)}</span>
+                  <div className="text-xs sm:text-sm font-bold text-foreground break-words min-w-0">
+                    Est. Total: <span>{formatPKR(pkrRange.min * qty)}</span>
+                    <span className="text-muted-foreground font-normal"> – {formatPKR(pkrRange.max * qty)}</span>
                   </div>
                 )}
               </div>
 
-              <motion.button
+              <button
                 onClick={handleAddToCart}
-                className="w-full py-4 text-sm font-black text-white rounded-2xl relative overflow-hidden"
-                style={inCart
-                  ? { background: 'linear-gradient(135deg, #059669, #047857)' }
-                  : { background: 'linear-gradient(135deg, #F97316, #EA580C)' }
-                }
-                whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(249,115,22,0.4)' }}
-                whileTap={{ scale: 0.98 }}
+                className={`w-full py-3.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  inCart
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'btn-primary'
+                }`}
               >
-                <AnimatePresence mode="wait">
-                  {inCart ? (
-                    <motion.span
-                      key="added"
-                      className="flex items-center justify-center gap-2"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Added to Cart — View Cart
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="add"
-                      className="flex items-center justify-center gap-2"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                      Add to Cart
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
+                {inCart ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    Added to Cart — View Cart
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                    Add to Cart
+                  </>
+                )}
+              </button>
 
               {/* View cart link */}
               <AnimatePresence>
@@ -471,15 +390,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             </div>
 
             {/* ── TABS ── */}
-            <div className="flex gap-1 mb-5 p-1 bg-[#F5F4F0] dark:bg-[#1E293B] rounded-xl border border-[#E7E4DF] dark:border-[#334155] w-full min-w-0 overflow-hidden">
+            <div className="flex gap-1 mb-5 p-1 bg-secondary rounded-lg border border-border w-full min-w-0 overflow-hidden">
               {(['variants', 'specs', 'inquiry'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 min-w-0 py-2 sm:py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all capitalize ${activeTab === tab
-                      ? 'bg-white dark:bg-[#0F172A] text-[#2563EB] shadow-sm border border-[#E7E4DF] dark:border-[#334155]'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
+                  className={`flex-1 min-w-0 py-2 sm:py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold rounded-md transition-all capitalize cursor-pointer ${
+                    activeTab === tab
+                      ? 'bg-card text-primary shadow-sm border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {tab === 'variants' ? 'Variants' : tab === 'specs' ? 'Specs' : 'Inquiry'}
                 </button>
@@ -497,10 +417,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                   transition={{ duration: 0.2 }}
                 >
                   {p.variants.length > 0 ? (
-                    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 rounded-xl border border-[#E7E4DF] dark:border-[#334155] w-full max-w-[100vw] sm:max-w-full">
+                    <div className="overflow-x-auto rounded-lg border border-border w-full">
                       <table className="w-full min-w-[520px] text-xs">
                         <thead>
-                          <tr className="bg-[#F5F4F0] dark:bg-[#1E293B] text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <tr className="bg-secondary text-muted-foreground uppercase tracking-wider">
                             <th className="text-left px-3 py-2.5 font-bold">Cat No.</th>
                             <th className="text-left px-3 py-2.5 font-bold">Description</th>
                             {p.variants[0] && Object.keys(p.variants[0].specs).map(k => (
@@ -511,17 +431,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                         </thead>
                         <tbody>
                           {p.variants.map((v, idx) => (
-                            <tr key={idx} className={`border-t border-[#E7E4DF] dark:border-[#334155] ${idx % 2 === 0
-                                ? 'bg-white dark:bg-[#0F172A]'
-                                : 'bg-[#F5F4F0]/50 dark:bg-[#1E293B]/50'
-                              } hover:bg-orange-50 dark:hover:bg-orange-500/5 transition-colors`}>
-                              <td className="px-3 py-2.5 font-mono font-bold text-gray-800 dark:text-gray-200">{v.catNo}</td>
-                              <td className="px-3 py-2.5 text-gray-600 dark:text-gray-400">{v.description}</td>
+                            <tr key={idx} className={`border-t border-border transition-colors hover:bg-secondary/60 ${
+                              idx % 2 === 0 ? 'bg-card' : 'bg-secondary/30'
+                            }`}>
+                              <td className="px-3 py-2.5 font-mono font-bold text-foreground">{v.catNo}</td>
+                              <td className="px-3 py-2.5 text-muted-foreground">{v.description}</td>
                               {Object.values(v.specs).map((val, i) => (
-                                <td key={i} className="px-3 py-2.5 text-gray-600 dark:text-gray-400">{val}</td>
+                                <td key={i} className="px-3 py-2.5 text-muted-foreground">{val}</td>
                               ))}
                               <td className="px-3 py-2.5">
-                                <span className="badge-orange text-[10px]">Contact</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">Contact</span>
                               </td>
                             </tr>
                           ))}
@@ -529,7 +448,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                       </table>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-400 text-sm bg-[#F5F4F0] dark:bg-[#1E293B] rounded-xl border border-[#E7E4DF] dark:border-[#334155]">
+                    <div className="text-center py-8 text-muted-foreground text-sm bg-secondary rounded-lg border border-border">
                       Contact us for full model variant list and pricing.
                     </div>
                   )}
@@ -548,16 +467,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                   {p.specs.map((spec, idx) => {
                     const [label, value] = spec.includes(':') ? spec.split(':') : ['Specification', spec]
                     return (
-                      <motion.div
+                      <div
                         key={idx}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 py-3 px-4 rounded-xl border border-[#E7E4DF] dark:border-[#334155] bg-white dark:bg-[#1E293B] min-w-0"
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 py-3 px-4 rounded-lg border border-border bg-card min-w-0"
                       >
-                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium shrink-0">{label.trim()}</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white break-words text-left sm:text-right">{value?.trim() || spec}</span>
-                      </motion.div>
+                        <span className="text-xs text-muted-foreground font-medium shrink-0">{label.trim()}</span>
+                        <span className="text-xs font-bold text-foreground break-words text-left sm:text-right">{value?.trim() || spec}</span>
+                      </div>
                     )
                   })}
                 </motion.div>
@@ -602,15 +518,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                         onChange={e => setInquiryForm(f => ({ ...f, message: e.target.value }))}
                         className="input-base mb-4 resize-none"
                       />
-                      <motion.button
+                      <button
                         type="submit"
-                        className="w-full py-3.5 text-sm font-black text-white rounded-xl"
-                        style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
-                        whileHover={{ scale: 1.01, boxShadow: '0 6px 24px rgba(37,99,235,0.4)' }}
-                        whileTap={{ scale: 0.98 }}
+                        className="btn-primary w-full py-3 text-sm justify-center"
                       >
                         Send Inquiry →
-                      </motion.button>
+                      </button>
                     </form>
                   )}
                 </motion.div>
@@ -620,63 +533,42 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         </div>
 
         {/* ── FULL DESCRIPTION SECTION ── */}
-        <motion.div
-          className="mb-10 sm:mb-16 p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1E293B] border border-[#E7E4DF] dark:border-[#334155] w-full min-w-0"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.55 }}
-        >
+        <div className="mb-10 sm:mb-16 p-4 sm:p-8 rounded-lg bg-card border border-border w-full min-w-0">
           <p className="overline mb-3">About This Product</p>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mb-4 break-words">{p.name}</h2>
-          <p className="text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl break-words">{p.fullDescription}</p>
-        </motion.div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 break-words">{p.name}</h2>
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-3xl break-words">{p.fullDescription}</p>
+        </div>
 
         {/* ── RELATED PRODUCTS ── */}
         <div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <p className="overline mb-2">You May Also Like</p>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Related Products</h2>
-          </motion.div>
+          <div className="mb-6">
+            <p className="overline mb-1">You May Also Like</p>
+            <h2 className="text-xl font-bold text-foreground">Related Products</h2>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {FEATURED_PRODUCTS.filter(fp => fp.slug !== slug).slice(0, 4).map((related, idx) => (
-              <motion.div
+              <Link
                 key={related.slug}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.08, duration: 0.5 }}
-                whileHover={{ y: -6 }}
+                href={`/products/${related.slug}`}
+                className="store-card overflow-hidden group"
               >
-                <Link
-                  href={`/products/${related.slug}`}
-                  className="block bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E7E4DF] dark:border-[#334155] overflow-hidden group hover:border-[#2563EB] dark:hover:border-[#2563EB] transition-all duration-300 hover:shadow-blue-glow"
-                >
-                  <div className="h-28 sm:h-32 flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg, #0F172A, #1E293B)' }}>
-                    <span className="text-4xl sm:text-5xl transition-transform duration-300 group-hover:scale-110 select-none">
-                      {getIcon(related.category)}
-                    </span>
-                  </div>
-                  <div className="p-3">
-                    <p className="text-[11px] font-bold text-orange-500 mb-1 uppercase tracking-wider">{related.category}</p>
-                    <h3 className="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-[#2563EB] transition-colors leading-tight mb-1">{related.name}</h3>
-                    <p className="text-[10px] text-gray-400 font-mono">{related.catNo}</p>
-                    {PKR_PRICES[related.slug] && (
-                      <p className="text-xs font-bold text-orange-500 mt-1">
-                        {formatPKR(PKR_PRICES[related.slug]!.min)}+
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              </motion.div>
+                <div className="h-28 sm:h-32 flex items-center justify-center bg-secondary">
+                  <span className="text-4xl sm:text-5xl transition-transform duration-300 group-hover:scale-110 select-none">
+                    {getIcon(related.category)}
+                  </span>
+                </div>
+                <div className="p-3">
+                  <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">{related.category}</p>
+                  <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-tight mb-1">{related.name}</h3>
+                  <p className="text-[10px] text-muted-foreground font-mono">{related.catNo}</p>
+                  {PKR_PRICES[related.slug] && (
+                    <p className="text-xs font-bold mt-1" style={{ color: 'var(--color-orange)' }}>
+                      {formatPKR(PKR_PRICES[related.slug]!.min)}+
+                    </p>
+                  )}
+                </div>
+              </Link>
             ))}
           </div>
         </div>
