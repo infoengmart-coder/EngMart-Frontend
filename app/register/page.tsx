@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 
 const BUSINESS_TYPES = [
@@ -36,63 +37,13 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex transition-colors">
-      {/* Left: Dark visual panel */}
-      <div className="hidden lg:flex flex-col justify-between flex-1 max-w-[44%] bg-slate-900 relative overflow-hidden p-16 text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.15),transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-0 grid-pattern opacity-15 pointer-events-none" />
-
-        {/* Logo */}
-        <Link href="/" className="inline-flex items-center gap-2.5 relative z-10">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-            <span className="text-white font-black text-base">E</span>
-          </div>
-          <span className="text-[17px] font-black tracking-tight text-white">
-            Eng<span className="text-primary">-Mart</span>
-          </span>
-        </Link>
-
-        <div className="relative z-10">
-          <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">Join 500+ Clients</span>
-          <h2 className="text-4xl font-black mb-5 leading-tight">
-            Your one-stop<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">industrial supply</span><br />
-            partner.
-          </h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-10">
-            ABB, CHINT, Himel, FICO Hi-Tech, PCE, Tense, Kondas, Opas — all brands,
-            all categories, one account, one supplier.
-          </p>
-
-          {/* Testimonial */}
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
-                KA
-              </div>
-              <div>
-                <p className="text-xs font-bold text-white leading-none">Engr. Kamran Ahmed</p>
-                <p className="text-[10px] text-slate-400 mt-1">KA Electrical Works</p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed italic">
-              "Eng-Mart has been our go-to for ABB and CHINT. Genuine products, fast delivery, and their team actually knows what they're selling."
-            </p>
-          </div>
-        </div>
-
-        <p className="text-xs text-slate-500 relative z-10">© {new Date().getFullYear()} Eng-Mart. All rights reserved.</p>
-      </div>
-
-      {/* Right: Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 overflow-y-auto">
-        <div className="max-w-lg mx-auto w-full">
-
-          {/* Mobile logo */}
-          <Link href="/" className="inline-flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-white font-black text-sm">E</span>
-            </div>
-            <span className="text-base font-black text-slate-900">Eng<span className="text-primary">-Mart</span></span>
+      {/* Left: Form panel */}
+      <div className="flex-1 flex flex-col justify-between px-6 sm:px-10 lg:px-12 py-10 max-w-xl mx-auto lg:mx-0 w-full overflow-y-auto">
+        
+        {/* Top nav */}
+        <div>
+          <Link href="/" className="inline-block mb-10">
+            <Image src="/header_logo.png" alt="Eng-Mart" width={140} height={36} className="h-9 w-auto" />
           </Link>
 
           {success ? (
@@ -101,13 +52,13 @@ export default function RegisterPage() {
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Account Created!</h2>
               <p className="text-slate-500 mb-2 text-sm">Welcome to Eng-Mart, <strong>{form.fullName}</strong>.</p>
               <p className="text-xs text-slate-400 mb-8">We'll verify your account and activate B2B pricing within 24 hours.</p>
-              <Link href="/login" className="btn-premium-primary text-xs px-6 py-3 justify-center inline-flex">Sign In →</Link>
+              <Link href="/login" className="btn-primary text-xs px-6 py-3 justify-center inline-flex">Sign In →</Link>
             </motion.div>
           ) : (
             <>
               <div className="mb-7">
                 <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">Create Account</span>
-                <h1 className="text-3xl text-slate-900 mb-2 font-black tracking-tight">Get started with<br /><span className="text-gradient-cyan">Eng-Mart</span></h1>
+                <h1 className="text-2xl sm:text-3xl text-slate-900 mb-2 font-extrabold leading-tight tracking-tight">Get started with Eng-Mart</h1>
                 <p className="text-slate-400 text-xs font-semibold">
                   Already have an account?{' '}
                   <Link href="/login" className="text-primary font-bold hover:underline transition-colors">Sign in →</Link>
@@ -176,7 +127,7 @@ export default function RegisterPage() {
                         <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
                       )}
                     </div>
-                    <button type="button" onClick={() => setStep('business')} className="btn-premium-primary w-full py-3.5 justify-center shadow-lg shadow-primary/20 cursor-pointer">
+                    <button type="button" onClick={() => setStep('business')} className="btn-primary w-full py-3.5 justify-center cursor-pointer">
                       Next: Business Info →
                     </button>
                   </motion.div>
@@ -221,14 +172,14 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         onClick={() => setStep('personal')}
-                        className="btn-premium-secondary flex-shrink-0 py-3 text-xs"
+                        className="btn-secondary flex-shrink-0 py-3 text-xs"
                       >
                         ← Back
                       </button>
                       <motion.button
                         type="submit"
                         disabled={loading || !form.terms}
-                        className="btn-premium-primary flex-1 justify-center shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-primary flex-1 justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         whileHover={{ scale: loading ? 1 : 1.01 }}
                         whileTap={{ scale: 0.99 }}
                       >
@@ -240,6 +191,44 @@ export default function RegisterPage() {
               </form>
             </>
           )}
+        </div>
+
+        {/* Bottom */}
+        <p className="text-[11px] text-slate-400 text-center mt-10">
+          © {new Date().getFullYear()} Eng-Mart. All rights reserved.
+        </p>
+      </div>
+
+      {/* Right: Visual panel */}
+      <div className="hidden lg:flex flex-1 bg-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.15),transparent_50%)] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col justify-center p-16 max-w-xl text-white">
+          <div className="mb-6">
+            <Image src="/header_logo.png" alt="Eng-Mart" width={140} height={36} className="h-9 w-auto brightness-0 invert" />
+          </div>
+          <h2 className="text-2xl font-extrabold mb-3 leading-tight">
+            Join 500+ Industrial Clients
+          </h2>
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            Create an account to unlock wholesale pricing, generate instant quotations, and manage your orders. We are the trusted supply partner for Pakistan's top panel builders.
+          </p>
+
+          {/* Testimonial from old register page */}
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
+                KA
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white leading-none">Engr. Kamran Ahmed</p>
+                <p className="text-[10px] text-slate-400 mt-1">KA Electrical Works</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed italic">
+              "Eng-Mart has been our go-to for ABB and CHINT. Genuine products, fast delivery, and their team actually knows what they're selling."
+            </p>
+          </div>
         </div>
       </div>
     </div>

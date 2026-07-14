@@ -5,15 +5,23 @@ import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { BRANDS } from '@/lib/data'
+import * as Lucide from 'lucide-react'
 
 export default function BrandsPage() {
+  const renderLucideIcon = (name: string, color: string) => {
+    // @ts-ignore
+    const IconComp = Lucide[name] || Lucide.Zap
+    return <IconComp className="w-7 h-7" style={{ color }} />
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 transition-colors">
       <Navbar />
 
       {/* Hero */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-white border-b border-slate-200/60 transition-colors">
+      <section className="relative pt-14 pb-16 overflow-hidden bg-white border-b border-slate-200/60 transition-colors">
         <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <nav className="flex items-center gap-2 text-sm text-slate-400 mb-4">
@@ -24,7 +32,7 @@ export default function BrandsPage() {
             <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-2 tracking-tight">
               Our Sourced <span className="text-gradient-cyan">Brands</span>
             </h1>
-            <p className="text-slate-500 text-sm sm:text-base">Authorized distributor for 8 world-class industrial electrical brands</p>
+            <p className="text-slate-500 text-sm sm:text-base font-semibold">Authorized distributor for 8 world-class industrial electrical brands</p>
           </motion.div>
         </div>
       </section>
@@ -39,23 +47,26 @@ export default function BrandsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
               >
-                <div className="glow-card block overflow-hidden bg-white border border-slate-200/60 group hover:border-primary/45 transition-all duration-300 h-full">
+                <div className="glow-card block overflow-hidden bg-white border border-slate-200/60 group hover:border-primary/20 transition-all duration-300 h-full shadow-sm hover:shadow-md">
                   <Link href={`/brands/${brand.slug}`}>
                     {/* Brand header */}
                     <div
-                      className="h-36 flex items-center justify-center relative overflow-hidden"
+                      className="h-36 flex items-center justify-center relative overflow-hidden bg-slate-50"
                       style={{
-                        background: `linear-gradient(135deg, ${brand.color}15, ${brand.color}05)`,
-                        borderBottom: `2px solid ${brand.color}`,
+                        background: `radial-gradient(circle at center, ${brand.color}12 0%, transparent 70%)`,
+                        borderBottom: `1px solid ${brand.color}15`,
                       }}
                     >
                       <motion.div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-md"
-                        style={{ background: brand.color }}
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm"
+                        style={{
+                          background: `linear-gradient(135deg, ${brand.color}15, ${brand.color}05)`,
+                          border: `1.5px solid ${brand.color}25`
+                        }}
                         whileHover={{ scale: 1.08, rotate: 3 }}
                         transition={{ type: 'spring', stiffness: 300 }}
                       >
-                        {brand.name.charAt(0)}
+                        {renderLucideIcon(brand.icon || 'Zap', brand.color)}
                       </motion.div>
                     </div>
 
@@ -69,8 +80,8 @@ export default function BrandsPage() {
                         <span className="text-slate-200">·</span>
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">{brand.products}+ Products</span>
                       </div>
-                      <p className="text-xs text-slate-400 mb-5">
-                        Supplier: <span className="font-semibold text-slate-650">{brand.supplier}</span>
+                      <p className="text-xs text-slate-400 mb-5 font-semibold">
+                        Supplier: <span className="font-bold text-slate-600">{brand.supplier}</span>
                       </p>
 
                       <div

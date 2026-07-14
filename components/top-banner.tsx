@@ -17,19 +17,19 @@ export function TopBanner() {
   if (!visible) return null
 
   return (
-    <div className="bg-[#F97316] text-white relative">
+    <div className="bg-primary text-primary-foreground relative select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-9 gap-4">
           {/* Left contacts */}
-          <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
-            <a href={`tel:${SITE.phone}`} className="flex items-center gap-1.5 text-xs font-medium text-orange-100 hover:text-white transition-colors">
+          <div className="hidden sm:flex items-center gap-4 flex-shrink-0 text-xs text-primary-foreground/90 font-medium">
+            <a href={`tel:${SITE.phone}`} className="flex items-center gap-1.5 hover:text-white transition-colors">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
               {SITE.phone}
             </a>
-            <span className="text-orange-300 text-xs">·</span>
-            <span className="text-xs text-orange-100">{SITE.hours}</span>
+            <span className="opacity-50">·</span>
+            <span>{SITE.hours}</span>
           </div>
 
           {/* Centre announcement */}
@@ -46,7 +46,7 @@ export function TopBanner() {
           {/* Right dismiss */}
           <button
             onClick={() => setVisible(false)}
-            className="flex-shrink-0 p-1 rounded text-orange-200 hover:text-white transition-colors"
+            className="flex-shrink-0 p-1 rounded text-primary-foreground/75 hover:text-white transition-colors cursor-pointer"
             aria-label="Dismiss"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

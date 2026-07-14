@@ -12,14 +12,14 @@ export const SITE = {
 }
 
 export const BRANDS = [
-  { name: 'ABB', slug: 'abb', country: 'Switzerland', supplier: 'Ameejee Valleejee & Sons', color: '#FF0000', products: 180 },
-  { name: 'CHINT', slug: 'chint', country: 'China', supplier: 'HL PK Pvt Ltd', color: '#0066CC', products: 220 },
-  { name: 'Himel', slug: 'himel', country: 'International', supplier: 'Powerhouse', color: '#E30613', products: 310 },
-  { name: 'FICO Hi-Tech', slug: 'fico', country: 'Pakistan', supplier: 'Cognitive Solutions', color: '#1B4F8A', products: 260 },
-  { name: 'PCE', slug: 'pce', country: 'Germany', supplier: 'Powerhouse', color: '#F97316', products: 90 },
-  { name: 'Tense', slug: 'tense', country: 'Turkey', supplier: 'AT Electricals', color: '#C0392B', products: 150 },
-  { name: 'Kondas', slug: 'kondas', country: 'Turkey', supplier: 'AT Electricals', color: '#2980B9', products: 45 },
-  { name: 'Opas', slug: 'opas', country: 'Turkey', supplier: 'AT Electricals', color: '#27AE60', products: 60 },
+  { name: 'ABB', slug: 'abb', country: 'Switzerland', supplier: 'Ameejee Valleejee & Sons', color: '#FF0000', products: 180, icon: 'Zap' },
+  { name: 'CHINT', slug: 'chint', country: 'China', supplier: 'HL PK Pvt Ltd', color: '#0066CC', products: 220, icon: 'Layers' },
+  { name: 'Himel', slug: 'himel', country: 'International', supplier: 'Powerhouse', color: '#E30613', products: 310, icon: 'ShieldAlert' },
+  { name: 'FICO Hi-Tech', slug: 'fico', country: 'Pakistan', supplier: 'Cognitive Solutions', color: '#1B4F8A', products: 260, icon: 'Gauge' },
+  { name: 'PCE', slug: 'pce', country: 'Germany', supplier: 'Powerhouse', color: '#F97316', products: 90, icon: 'Plug' },
+  { name: 'Tense', slug: 'tense', country: 'Turkey', supplier: 'AT Electricals', color: '#C0392B', products: 150, icon: 'Activity' },
+  { name: 'Kondas', slug: 'kondas', country: 'Turkey', supplier: 'AT Electricals', color: '#2980B9', products: 45, icon: 'Cpu' },
+  { name: 'Opas', slug: 'opas', country: 'Turkey', supplier: 'AT Electricals', color: '#27AE60', products: 60, icon: 'Sliders' },
 ]
 
 export const CATEGORIES = [

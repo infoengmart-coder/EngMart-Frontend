@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { FEATURED_PRODUCTS, CATEGORIES, BRANDS, ALL_PRODUCTS } from '@/lib/data'
+import { CATEGORIES, BRANDS, ALL_PRODUCTS } from '@/lib/data'
 import { ProductCard } from '@/components/product-card'
 import Link from 'next/link'
 
@@ -68,25 +68,25 @@ export default function ProductsPage() {
   }
 
   const FilterSidebar = () => (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Categories */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Categories</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Categories</p>
         <div className="space-y-2">
           {CATEGORIES.map(cat => (
             <button key={cat.slug} onClick={() => toggleCategory(cat.name)} className="flex items-center gap-3 cursor-pointer group w-full text-left">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                 selectedCategories.includes(cat.name)
-                  ? 'bg-primary border-primary text-white'
-                  : 'border-slate-200 bg-white group-hover:border-primary/40'
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : 'border-border bg-card group-hover:border-primary/40'
               }`}>
                 {selectedCategories.includes(cat.name) && (
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </div>
-              <span className={`text-sm ${selectedCategories.includes(cat.name) ? 'font-bold text-slate-900' : 'font-medium text-slate-650'} group-hover:text-primary transition-colors`}>
+              <span className={`text-xs font-semibold ${selectedCategories.includes(cat.name) ? 'text-foreground' : 'text-muted-foreground'} group-hover:text-primary transition-colors`}>
                 {cat.short}
               </span>
             </button>
@@ -96,22 +96,22 @@ export default function ProductsPage() {
 
       {/* Brands */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Brands</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Brands</p>
         <div className="space-y-2">
           {BRANDS.map(brand => (
             <button key={brand.slug} onClick={() => toggleBrand(brand.name)} className="flex items-center gap-3 cursor-pointer group w-full text-left">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                 selectedBrands.includes(brand.name)
-                  ? 'bg-primary border-primary text-white'
-                  : 'border-slate-200 bg-white group-hover:border-primary/40'
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : 'border-border bg-card group-hover:border-primary/40'
               }`}>
                 {selectedBrands.includes(brand.name) && (
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </div>
-              <span className={`text-sm ${selectedBrands.includes(brand.name) ? 'font-bold text-slate-900' : 'font-medium text-slate-650'} group-hover:text-primary transition-colors`}>
+              <span className={`text-xs font-semibold ${selectedBrands.includes(brand.name) ? 'text-foreground' : 'text-muted-foreground'} group-hover:text-primary transition-colors`}>
                 {brand.name}
               </span>
             </button>
@@ -122,23 +122,23 @@ export default function ProductsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-secondary/30 flex flex-col">
       <Navbar />
 
-      {/* Breadcrumb */}
-      <div className="pt-28 bg-white border-b border-slate-200/60 py-4 sticky top-0 z-30 shadow-sm">
+      {/* Breadcrumb Sticky Bar */}
+      <div className="bg-card border-b border-border py-3 z-30 sticky top-16 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-              <span className="text-slate-200">/</span>
-              <span className="text-slate-800 font-bold">All Products</span>
+              <span className="text-border">/</span>
+              <span className="text-foreground font-semibold">All Products</span>
             </div>
             
             {/* Mobile Filter Toggle */}
             <button
               onClick={() => setMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-primary transition-colors"
+              className="lg:hidden flex items-center gap-2 text-xs font-bold text-foreground hover:text-primary transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -149,16 +149,16 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Desktop Sidebar */}
-          <aside className="hidden lg:block w-[260px] flex-shrink-0">
-            <div className="sticky top-24 p-6 bg-white rounded-3xl border border-slate-200/60 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-black text-slate-900">Filters</h2>
+          <aside className="hidden lg:block w-[240px] flex-shrink-0">
+            <div className="sticky top-32 p-5 bg-card rounded-lg border border-border shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-bold text-foreground">Filters</h2>
                 {(selectedBrands.length > 0 || selectedCategories.length > 0) && (
-                  <button onClick={clearFilters} className="text-xs font-bold text-primary hover:underline">
+                  <button onClick={clearFilters} className="text-xs font-bold text-primary hover:underline cursor-pointer">
                     Clear All
                   </button>
                 )}
@@ -175,7 +175,7 @@ export default function ProductsPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-slate-950/40 z-[200] lg:hidden backdrop-blur-sm"
+                  className="fixed inset-0 bg-foreground/30 z-[200] lg:hidden backdrop-blur-sm"
                   onClick={() => setMobileFilterOpen(false)}
                 />
                 <motion.div
@@ -183,17 +183,17 @@ export default function ProductsPage() {
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
                   transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                  className="fixed inset-y-0 left-0 w-4/5 max-w-sm bg-white z-[201] p-6 overflow-y-auto shadow-2xl lg:hidden"
+                  className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-card z-[201] p-6 overflow-y-auto shadow-2xl lg:hidden"
                 >
-                  <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-xl font-black text-slate-900">Filters</h2>
-                    <button onClick={() => setMobileFilterOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 cursor-pointer">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-foreground">Filters</h2>
+                    <button onClick={() => setMobileFilterOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-muted-foreground cursor-pointer">
                       ✕
                     </button>
                   </div>
                   <FilterSidebar />
-                  <div className="mt-8 pt-6 border-t border-slate-100">
-                    <button onClick={() => setMobileFilterOpen(false)} className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 cursor-pointer">
+                  <div className="mt-6 pt-5 border-t border-border">
+                    <button onClick={() => setMobileFilterOpen(false)} className="btn-primary w-full py-3 text-xs justify-center cursor-pointer">
                       Show {filteredProducts.length} Results
                     </button>
                   </div>
@@ -205,17 +205,18 @@ export default function ProductsPage() {
           {/* Main Content */}
           <main className="flex-1 min-w-0">
             {/* Toolbar */}
-            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 sm:gap-4 mb-6">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900">
-                Industrial Electrical <span className="text-slate-400 font-medium text-sm sm:text-lg ml-2">({filteredProducts.length} items)</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-foreground">
+                Industrial Electrical Products
+                <span className="text-muted-foreground font-normal text-xs sm:text-sm ml-2">({filteredProducts.length} items)</span>
               </h1>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-semibold text-slate-500 whitespace-nowrap">Sort by:</span>
+                <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Sort by:</span>
                 <select
                   value={sortParam}
                   onChange={e => setSortParam(e.target.value)}
-                  className="bg-white border border-slate-200 text-sm font-semibold text-slate-800 rounded-lg px-3 py-2 outline-none focus:border-primary cursor-pointer"
+                  className="bg-card border border-border text-xs font-semibold text-foreground rounded-lg px-2.5 py-1.5 outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="relevance">Relevance</option>
                   <option value="az">Name: A to Z</option>
@@ -231,29 +232,29 @@ export default function ProductsPage() {
             {(selectedBrands.length > 0 || selectedCategories.length > 0) && (
               <div className="flex flex-wrap gap-2 mb-6">
                 {[...selectedCategories, ...selectedBrands].map(tag => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-700 shadow-sm">
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card border border-border rounded-full text-xs font-bold text-foreground shadow-sm">
                     {tag}
                     <button onClick={() => { selectedCategories.includes(tag) ? toggleCategory(tag) : toggleBrand(tag) }} className="hover:text-primary text-[10px] cursor-pointer">
                       ✕
                     </button>
                   </span>
                 ))}
-                <button onClick={clearFilters} className="text-xs font-bold text-slate-400 hover:text-slate-600 ml-2 cursor-pointer">
+                <button onClick={clearFilters} className="text-xs font-bold text-muted-foreground hover:text-foreground ml-2 cursor-pointer">
                   Clear All
                 </button>
               </div>
             )}
 
             {/* Product Grid */}
-            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence>
                 {filteredProducts.map((product) => (
                   <motion.div
                     layout
                     key={product.slug}
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                   >
                     <ProductCard product={product} />
@@ -264,13 +265,13 @@ export default function ProductsPage() {
 
             {/* Empty State */}
             {filteredProducts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6">
-                <div className="text-5xl mb-4">🔍</div>
-                <h3 className="text-xl font-black text-slate-900 mb-2">No products found</h3>
-                <p className="text-slate-500 max-w-md mb-6 text-sm leading-relaxed">
+              <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-lg border border-border p-6 shadow-sm">
+                <div className="text-4xl mb-3">🔍</div>
+                <h3 className="text-base font-bold text-foreground mb-1">No products found</h3>
+                <p className="text-muted-foreground max-w-sm mb-5 text-xs leading-relaxed">
                   We couldn't find any products matching your current filters. Try adjusting your search criteria.
                 </p>
-                <button onClick={clearFilters} className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all cursor-pointer">
+                <button onClick={clearFilters} className="btn-primary text-xs py-2 px-5 cursor-pointer">
                   Clear All Filters
                 </button>
               </div>

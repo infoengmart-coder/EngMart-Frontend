@@ -17,58 +17,46 @@ function Stars({ count }: { count: number }) {
 
 export function Testimonials() {
   return (
-    <section className="py-24 bg-white dark:bg-slate-950 relative">
-      <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
+    <section className="py-12 sm:py-16 bg-secondary/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Title */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs font-bold text-primary tracking-widest uppercase">Success Stories</span>
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mt-2">
-            Trusted by Pakistan's Engineers
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-4 text-base sm:text-lg">
-            Read stories from panel builders, facility managers, and electrical project contractors.
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <span className="section-label">Client Reviews</span>
+          <h2 className="section-title mt-1">Trusted by Pakistan's Engineers</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Read what panel builders, facility managers, and electrical contractors say about us.
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Testimonial cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {TESTIMONIALS.map((t, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: idx * 0.08 }}
-              className="glow-card p-6 flex flex-col justify-between hover:border-primary/20"
+              transition={{ duration: 0.3, delay: idx * 0.06 }}
+              className="store-card p-5 flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Stars count={t.rating} />
-                  {/* Decorative quote mark */}
-                  <svg className="w-8 h-8 text-slate-200 dark:text-slate-800" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                  </svg>
-                </div>
-                
-                <blockquote className="text-[14px] text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                  "{t.text}"
+                <Stars count={t.rating} />
+                <blockquote className="text-sm text-muted-foreground leading-relaxed mt-3">
+                  &ldquo;{t.text}&rdquo;
                 </blockquote>
               </div>
 
-              <div className="flex items-center gap-3 pt-6 mt-6 border-t border-slate-100 dark:border-slate-850/50">
-                {/* Profile initials graphic */}
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-400 text-white font-extrabold text-sm flex items-center justify-center shadow-sm">
+              <div className="flex items-center gap-3 pt-4 mt-4 border-t border-border">
+                <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">
                   {t.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div>
-                  <h4 className="text-[13px] font-extrabold text-slate-900 dark:text-white leading-none">
+                  <h4 className="text-sm font-semibold text-foreground leading-none">
                     {t.name}
                   </h4>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                    {t.role} — <span className="font-semibold text-slate-500">{t.company}</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t.role}, {t.company}
                   </p>
                 </div>
               </div>

@@ -4,6 +4,8 @@ import './globals.css'
 import { SmoothScroll } from '@/lib/smooth-scroll'
 import { CartProvider } from '@/lib/cart'
 import { ThemeProvider } from '@/lib/theme'
+import { AuthProvider } from '@/lib/auth'
+import { AccountProvider } from '@/lib/account-context'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -72,14 +74,19 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-background text-slate-900">
         <ThemeProvider>
-          <CartProvider>
-            <SmoothScroll>
-              <div id="scroll-progress" />
-              {children}
-            </SmoothScroll>
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <AccountProvider>
+                <SmoothScroll>
+                  <div id="scroll-progress" />
+                  {children}
+                </SmoothScroll>
+              </AccountProvider>
+            </CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
   )
 }
+

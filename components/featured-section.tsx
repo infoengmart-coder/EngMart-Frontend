@@ -21,37 +21,32 @@ const FILTERS = ['All', 'ABB', 'CHINT', 'Himel', 'FICO']
 
 export function FeaturedSection() {
   const [activeFilter, setActiveFilter] = useState('All')
-  
+
   const filteredProducts = activeFilter === 'All'
-    ? FEATURED_PRODUCTS.slice(0, 8)
-    : FEATURED_PRODUCTS.filter(p => p.brand.toLowerCase() === activeFilter.toLowerCase()).slice(0, 8)
+    ? FEATURED_PRODUCTS.slice(0, 16)
+    : FEATURED_PRODUCTS.filter(p => p.brand.toLowerCase() === activeFilter.toLowerCase()).slice(0, 16)
 
   return (
-    <section className="py-24 bg-slate-50 dark:bg-slate-900 relative">
-      {/* Background patterns */}
-      <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
+    <section className="py-12 sm:py-16 bg-secondary/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-xs font-bold text-primary tracking-widest uppercase">Special Sourcing</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mt-2">
-              Featured Products
-            </h2>
+            <span className="section-label">Top Picks</span>
+            <h2 className="section-title mt-1">Featured Products</h2>
           </div>
 
-          {/* Interactive filter badges (21.dev style) */}
-          <div className="flex flex-wrap gap-1.5 bg-white dark:bg-slate-950 p-1.5 rounded-full border border-slate-200/60 dark:border-slate-800/60 w-fit">
+          {/* Filter tabs */}
+          <div className="flex flex-wrap gap-1 bg-card p-1 rounded-lg border border-border w-fit">
             {FILTERS.map(f => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-4 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                   activeFilter === f
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                 }`}
               >
                 {f}
@@ -60,20 +55,17 @@ export function FeaturedSection() {
           </div>
         </div>
 
-        {/* Dynamic product card grid with exit/entry animations */}
-        <motion.div
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
+        {/* Product grid */}
+        <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           <AnimatePresence mode="popLayout">
             {filteredProducts.map((product, idx) => (
               <motion.div
                 key={product.slug}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
               >
                 <ProductCard
                   product={product}
@@ -85,10 +77,10 @@ export function FeaturedSection() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Bottom Panel */}
-        <div className="mt-12 text-center">
-          <Link href="/products" className="btn-premium-primary inline-flex">
-            Explore Full Catalog
+        {/* View all */}
+        <div className="mt-8 text-center">
+          <Link href="/products" className="btn-primary inline-flex text-sm py-2.5 px-6">
+            View All Products →
           </Link>
         </div>
 

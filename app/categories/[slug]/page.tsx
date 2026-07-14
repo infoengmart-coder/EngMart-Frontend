@@ -191,7 +191,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
       <Navbar />
 
       {/* Hero directly matched for Category */}
-      <section className="relative overflow-hidden pt-28 pb-12 border-b border-slate-200/60 bg-white transition-colors">
+      <section className="relative overflow-hidden pt-12 pb-12 border-b border-slate-200/60 bg-white transition-colors">
         <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
         <div
           className="absolute right-0 top-0 w-80 h-80 rounded-full blur-3xl opacity-10"
