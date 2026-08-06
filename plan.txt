@@ -1,0 +1,1083 @@
+# Eng-Mart Website Rebuild — Complete Project Plan
+**Client:** Eng-Mart (eng-mart.com)  
+**Budget:** PKR 220,000 (inc. domain ~PKR 2,000/yr)  
+**Goal:** Rebuild frontend from scratch — same content/products, stunning new UI, proper SEO  
+**Stack:** Next.js 14 (App Router) + Django 5 + PostgreSQL  
+**Timeline:** 5–6 weeks  
+
+---
+
+## Table of Contents
+
+1. [Project Summary](#1-project-summary)
+2. [What Is and Is NOT Included](#2-what-is-and-is-not-included)
+3. [Tech Stack & Reasoning](#3-tech-stack--reasoning)
+4. [Hosting & Infrastructure](#4-hosting--infrastructure)
+5. [Payment Milestones](#5-payment-milestones)
+6. [Product Catalog — All Brands & Categories](#6-product-catalog--all-brands--categories)
+7. [Database Schema](#7-database-schema)
+8. [PDF Data Ingestion Plan](#8-pdf-data-ingestion-plan)
+9. [Next.js Project Structure](#9-nextjs-project-structure)
+10. [Django Project Structure](#10-django-project-structure)
+11. [Page-by-Page Plan](#11-page-by-page-plan)
+12. [UI/UX Design Direction](#12-uiux-design-direction)
+13. [SEO Strategy](#13-seo-strategy)
+14. [Phase-by-Phase Timeline](#14-phase-by-phase-timeline)
+15. [Scope Boundary — What Costs Extra](#15-scope-boundary--what-costs-extra)
+16. [Launch Checklist](#16-launch-checklist)
+17. [Post-Launch Handover](#17-post-launch-handover)
+
+---
+
+## 1. Project Summary
+
+The current eng-mart.com is a React Single Page Application (SPA) with zero server-side rendering. When Google crawls it, it sees a blank "Loading..." screen — meaning the entire site is effectively invisible to search engines. The UI is basic, there are reported bugs, and there is no proper product filtering or SEO structure.
+
+**The rebuild delivers:**
+- A fully server-side rendered Next.js frontend (Google sees real content)
+- Same products, categories, brands, and info as the current site
+- Products from 7 supplier PDFs loaded into a clean database
+- Smooth animations, modern UI, professional look
+- Django admin panel so the client can update products/prices themselves
+- Correct SEO setup from day one — title tags, meta, structured data, sitemap
+
+**What does NOT change:**
+- Business info, contact details, about content
+- Product data (same items from the same suppliers)
+- Brand relationships (same brands the client already stocks)
+
+---
+
+## 2. What Is and Is NOT Included
+
+### ✅ INCLUDED in PKR 220,000
+
+- Next.js 14 frontend (SSR, App Router)
+- Django + DRF backend with REST API
+- PostgreSQL database
+- Django admin panel for product/price management
+- All products from the 7 PDFs imported into the database
+- Product listing with search + filter (by brand, category, specs)
+- Product detail pages
+- Contact/inquiry form (email-based)
+- Responsive design (mobile, tablet, desktop)
+- Framer Motion animations and page transitions
+- SEO: meta tags, JSON-LD structured data, sitemap.xml, robots.txt
+- Google Search Console setup
+- Domain registration assistance (1 year, ~PKR 2,000)
+- Deployment on Vercel (frontend) + Railway (backend)
+- 1-page admin guide for client
+- 30 days post-launch bug fixes
+
+### ❌ NOT INCLUDED (extra charge if requested)
+
+- Online cart or checkout
+- Payment gateway (JazzCash, EasyPaisa, Stripe)
+- WhatsApp integration or chat widget
+- Customer accounts / login
+- Order management system
+- Blog or news section
+- Multi-language (Urdu + English)
+- Any products NOT in the 7 PDFs already shared
+- Ongoing SEO content writing
+- Monthly maintenance after 30 days
+
+---
+
+## 3. Tech Stack & Reasoning
+
+### Frontend — Next.js 14 (App Router)
+
+**Why Next.js over plain React:**
+The current site is plain React (SPA). Google crawls it and sees nothing. Next.js renders pages on the server, so Google sees full HTML with real product names, descriptions, and prices. This alone will start generating organic traffic within weeks of launch, which the current site cannot do at all.
+
+```
+next: 14.x
+tailwindcss: 3.x
+framer-motion: 11.x
+axios: for API calls
+next/image: optimized images
+next-seo: meta tag management
+```
+
+### Backend — Django 5 + Django REST Framework
+
+**Why Django over FastAPI:**
+Django includes a free, powerful admin panel out of the box. The client needs to be able to update prices and add products without a developer. FastAPI has no admin — you'd spend extra weeks building one. Django gives it for free.
+
+```
+django: 5.x
+djangorestframework: 3.x
+django-cors-headers: for Next.js API calls
+psycopg2: PostgreSQL adapter
+pillow: image handling
+django-filter: filtering API
+whitenoise: static files
+```
+
+### Database — PostgreSQL
+
+Structured product data with JSONB for flexible specs per category. Free tier available on Railway/Render.
+
+### Why NOT headless Shopify
+
+Shopify monthly cost starts at $29/month = PKR ~8,000/month = PKR 96,000/year. That's almost half the entire project budget just for hosting. Not suitable for this client.
+
+---
+
+## 4. Hosting & Infrastructure
+
+### Frontend — Vercel (Free Hobby Plan)
+
+- Free for personal/small projects
+- Auto-deploys from GitHub
+- Global CDN, fast in Pakistan
+- Custom domain support free
+- Cost: PKR 0/month
+
+### Backend — Railway
+
+- Free $5 credit/month (enough for light traffic)
+- PostgreSQL included
+- Easy Django deployment
+- Cost: PKR 0–1,500/month depending on traffic
+
+### Domain
+
+- .com.pk domain: ~PKR 2,000/year from PKNIC or any registrar
+- Register in CLIENT'S name with CLIENT'S email
+- Never register in your own name
+
+### Total Running Cost for Client After Launch
+
+| Item | Cost/Month |
+|------|-----------|
+| Vercel (frontend) | PKR 0 |
+| Railway (backend + DB) | PKR 0–1,500 |
+| Domain | PKR 167 (PKR 2,000/yr) |
+| **Total** | **PKR 167–1,667/month** |
+
+---
+
+## 5. Payment Milestones
+
+| Milestone | Amount | When |
+|-----------|--------|------|
+| Advance (before any work) | PKR 110,000 | Day 1 — sign/agree scope |
+| Phase 2 complete (frontend visible) | PKR 60,000 | Week 3–4 |
+| Final delivery + launch | PKR 50,000 | Week 5–6 |
+| **Total** | **PKR 220,000** | |
+
+**Rules:**
+- Do not start work without the advance
+- Do not deploy the final site before the last payment
+- Keep domain/hosting in client's name so ownership is clear
+
+---
+
+## 6. Product Catalog — All Brands & Categories
+
+All products come from the 7 supplier PDFs shared. Below is the complete map.
+
+### Brand 1: Tense (via AT Electricals) — Made in Turkey
+**Supplier:** AT Electricals & Trading Co., Karachi  
+**Categories:**
+- Power Factor Controllers (RGM-07E, RGM-12S, RGT-08, RGT-12, RGT-MT18)
+- Digital Meters: AC Voltmeters (DJV-72, DJV-96, DJV-72S), AC Ammeters (DJA-72, DJA-96), 3-Phase Volt/Ampere Meters, Digital Voltmeter+Ammeter combo, Panel Multimeters (EM-06, EM-07K), Frequency Meters (DJF-72, DJF-96)
+- Protection Relays: Under/Over Voltage Relays 3-Phase and 1-Phase (GK-04S, GKT-03F, GKT-03, GKM-02F, GKM-02, GKM-11), Digital protection devices (GKE-40, DGK-04F), Phase Failure Relay (FKV-14)
+- Timers: Star-Delta Timer (ERV-YU), Multifunctional Timer (ERV-08), Programmable Timer (TTR-10), Socket Type On-Delay Timer (ERS-60YR)
+- Miscellaneous: Liquid Level Relay (VSR-05), Liquid Level Electrode (SSE-10), Water Float Switch (FLT-3), Photocell Relay (FR-GR)
+- Digital Energy Analyzers (TPM-01ES, TPM-05)
+- USB Converter (USB-CON)
+- Digital Overload Contactors (KON-TER-25/32/50/100)
+- Preset Counter (DS-72)
+- Temperature Controllers (DT-96, DT-72, DT-48, DT-D)
+- LV Current Transformers (ATM-40, ATM-60, AT-100 through AT-600)
+
+### Brand 2: Kondas (via AT Electricals) — Made in Turkey
+**Categories:**
+- LV Capacitors Cylindrical Dry Type (ZnPS: 2.5–25 KVAR, 440VAC)
+- LV Capacitors Box Dry Type (ZNPP: 5–50 KVAR, 440VAC)
+- Power Factor Controller (VarKON 12-M, 12-Steps)
+
+### Brand 3: Opas — Made in Turkey
+**Categories:**
+- Cam Switches: 2-Pole Changeover (32–100A), 3-Pole Changeover (32–63A), 4-Pole Changeover (32–315A)
+- Phase Selector Switches (32–125A)
+- Neutral Cut Switches (32A, 50A)
+- Panel Fan Thermostats (Hot, Cold)
+- Volt/Ampere Cam Switches (1-Pole Changeover, 7-Position Voltmeter, 4-Position Ammeter)
+
+### Brand 4: CHINT (via HL PK Pvt Ltd)
+**Categories:**
+- MCBs: 1-Pole NXB-63 (C6–C100, 6kA), 2-Pole (C6–C100), 3-Pole (C6–C100), 4-Pole NXB-125 (C80–C125)
+- MCCBs 3-Pole: NM1-63S, NXM-125S through NXM-1000S (32A–1000A)
+- MCCBs 4-Pole: NXM-125S/4300B through NXM-800S/4300B (32A–630A)
+- Earth Leakage MCCBs: NXMLE series 3-Pole and 4-Pole (32A–800A)
+- RCCBs/ELCBs: NXBLE-63 1P+N, 2P, 3P+N (C16–C63, 30mA/300mA, 6kA)
+- Magnetic Contactors: NXC-09 through NXC-185 (230V and 380V)
+- Thermal Overload Relays: NXR-25 (0.63–25A), NXR-38, NXR-100
+- Push Buttons (NP2-BA3311, NP2-BA4322, NP2-BR41)
+- Indicator Lights (ND16-22A/4, 220V Red/Green)
+- Panel Meters: Ammeter 6L2-A 500/5A, Voltmeter 6L2-V 500V
+- Change Over Switches (HY2-12, HY2-20)
+- Automatic Transfer Switches (NZ7-400S/4: 250–400A, NZ7-630S/4: 500–630A)
+- Frequency Converters (NVF2G series: 3.7kW, 90kW, 132kW)
+- Manual Motor Starters (NS2-25: 1.6–18A)
+
+### Brand 5: FICO Hi-Tech Pvt Ltd (via Cognitive Solutions)
+**Categories:**
+- Current Transformers ELC Series (Window 20–100mm, ELC-20S through ELC-100, 30/5A–3200/5A, Class 1)
+- Current Transformers ILC Series (High accuracy 0.5 class, window 30–100mm, ILC-30 through ILC-100)
+- Current Transformers RLC Series (15VA burden, window 30–125mm, RLC-30 through RLC-125, up to 4000/5A)
+- Current Transformers SLC Series (10VA burden, window 30–125mm)
+- Current Transformers SDH Series (High window: 130x80 through 265x110, up to 8000/5A)
+- Split Core CTs SCLC Series (window 20x30 through 80x200, clamp type)
+- TAB/TLC Series (Max bar size: 60–unlimited, 400/5A–5000/5A)
+- CT with 1A Secondary (ELC-30 through ELC-60, 30/1A–1200/1A)
+- WAPDA Approved CTs (WSB-30 through WSB-75, 100/5A–1000/5A)
+- KE Approved CTs (SLC-40 through SLC-125k)
+- MLC Resin Cast CTs (outdoor, window 30–100x125mm, 0.5 class, anti-theft)
+- Wound Type CTs (0.5 class, 5/5A–300/5A)
+- Indication Lamps (FIL-22 22mm, FIL-30 30mm, Red/Green/Yellow/Blue)
+- Push Buttons FPB-22 (flush type, mushroom head, key lock, various arrangements)
+- Analogue Panel Meters (FAM-96A, FAM-72A, FAM-48A ammeters; voltmeter 500V; power factor, hertz, RPM, watt meters)
+- Selector Switches (ammeter 4-pos, voltmeter 7-pos and 4-pos, motor star-delta)
+- Digital Panel Meters: Ammeters FDM-96A/96B-A/48A/72A/96-3A, Voltmeters FDM-96V/96B-V/48V/72V/96-3V, Frequency FDM-96F/72F, Watt Meter FDM-W, DIN Rail FDM-DRT, VA Meter FDM-VA, VAF Meter FDM-VAF, Power Analyser FDM-PA
+- Change Over Switches FS26 (16A 1-Pole through 63A 4-Pole)
+- Phase Selector Switches FS26-32, FS26-16
+- Series Rotary Switches FS30
+- D Fuse Fittings (Fuse Cutout single/double insulator, Disconnector Switch, Dropout Cutout)
+- 11KV Fuse Links (1K–200K)
+- Main Switches (30A–600A, 3-pole/4-pole, Turn HRC type)
+- Change Over Switches — FICO Enterprises (30A wall to 2500A floor mounted, 2-pole/4-pole)
+
+### Brand 6: Himel (via Powerhouse)
+**Categories:**
+- MCBs HDB3w (18mm, 1P–4P, 4.5/6kA, B/C/D curves, 1/2–63A)
+- MCBs HD3w-125 (27mm, 3P–4P, 10kA, 80–125A)
+- RCCBs HDB6VR/HDB3VR (2P/4P, 10–100A, 30/300mA)
+- Surge Protective Devices HDY1/HDY3 (20–80kA, 275/420V)
+- MCCBs HDM3 Fixed (3P/4P, 16–1250A, 25kA–45kA)
+- MCCBs HDM6 Adjustable (3P, 16–630A, 30kA)
+- MCCBs HDM3E Electronic Trip (3P, 250–800A, 50–70kA)
+- Air Circuit Breakers HDW3 (3P/4P, 800–3200A, 42–65kA)
+- Contactors HDC3/HDC6 (9A–630A, 3-Pole, 4kW–335kW)
+- 4-Pole Contactors HJX2 (25A–630A)
+- Auxiliary Contact Blocks (HF4, HF6 series)
+- Mechanical Interlocks + Operating Coils (HFR6, HX318–HX6630)
+- Air Delayed Contacts HFT6
+- Modular Contactors HDCH8P (2P/4P, 20–25A)
+- Thermal Overload Relays HDR3/HDR6 (0.63A–400A)
+- Motor Protection Breakers MPCB HDP6 (0.4A–32A, 0.12–15kW)
+- Magnetic Starters DOL HDS2/HDS3 (1–25A, 0.37–11kW)
+- Miniature Relays HDZ8P/HDZ9 (8-pin/14-pin, 24VDC/220VAC)
+- Phase Failure Relays HXJ9 (380V/400V)
+- Time Relays HDRT8 (10s–480s)
+- Electronic Timers HJSZ3 (0.5s–30min)
+- LV Capacitors HBSM (7.5–50 KVAR, 415VAC)
+- Power Factor Controllers HJKL5C (6-stage, 12-stage, 380V)
+- Variable Frequency Drives: Basic HAVBA (0.75–5.5kW) and Expert HAVXS (7.5–22kW)
+- Panel Meters: Analogue ammeters H96TA (30/5–5000/5A), AC voltmeters H96TV, Frequency meter H96THZ, Digital ammeters HPAL, Digital voltmeters HPZL, Digital frequency HPPL
+- Current Transformers HLMK (30/5–5000/5A, 20–60mm diameter)
+- Push Buttons HLAY7 (Red/Green, illuminated/non-illuminated, emergency)
+- Selector Switches HLAY5ED (2-pos, 3-pos)
+- Indication Lights HLD11 (220VAC, 24VDC, 110VDC — Green/Red/Yellow/Blue)
+- HRC Fuses HRT16 (10–630A fuse links), HRC Fuse Bases HRT16 (up to 630A)
+- Cylindrical Fuses HRT18 (2–10A)
+- Fuse Holders HRT18 (32A with/without indicator)
+- Consumer Boxes HDPZ50: Full Plastic (6–24 way) and Metal+Plastic (8–24 way)
+- Wiring Devices Prime Series: Flush switches (1–4 gang), sockets (13A/15A international), USB sockets, fan/dimmer, telecom/TV/data outlets
+- Wiring Devices Prime V2 Series: Same range in updated design
+
+### Brand 7: PCE (via Powerhouse)
+**Categories:**
+- Wall Sockets (16A–125A, 3-Pole/5-Pole, IP44/IP67)
+- Flanged Sockets (16A–125A, 3-Pole/5-Pole, IP44/IP67)
+- Connectors (16A–125A, 3-Pole/5-Pole, IP44/IP67)
+- Switched Interlocked Safety Sockets (16A–63A, 3-Pole/5-Pole)
+- Industrial Plugs (16A–125A, 3-Pole/5-Pole, IP44/IP67)
+- Mini Flanged Sockets (13A 3-Pin flat pin, IP44)
+- Schuko Sockets and Plugs (16A, Blue/White/Black, IP54/IP20)
+
+### Brand 8: ABB (via Ameejee Valleejee & Sons, Karachi)
+**Categories:**
+- MCBs SH Series 6kA (SH201 1P, SH202 2P, SH203 3P, SH204 4P — 1A–40A)
+- MCBs S Series 10kA (S201 1P, S202 2P, S203 3P, S204 4P — 1A–63A)
+- RCCBs FH202/FH204 (2P/4P, 25–63A, 30/300mA) — Made in Italy
+- MCCBs SACE Formula Fixed 3P (A1A/A1B/A1C/A1N/A2B/A2C/A2N/A3N/A3S — 15A–630A, 18–50kA)
+- MCCBs SACE Formula Fixed 4P (same series, 15A–630A)
+- SACE Formula Accessories (Shunt, UVR, Auxiliary Contacts, Rotary Handle)
+- MCCBs TMAX 3P Adjustable (XT1C/XT1N/XT2S/XT2H/XT3N/T4/T5/T6/T7/T8 — 25A–3200A, 25–70kA)
+- MCCBs TMAX 4P Adjustable (XT1C/XT1N/XT2H/T4/T5/T6/T7 — 25A–1600A)
+- TMAX Accessories (Auxiliary contacts, Shunt opening, UVR, Motor operators)
+- Air Circuit Breakers ACB 3P (E1.2N/E2.2N/E2.2H/E4.2N/E4.2H/E6.2H — 1250A–6300A, 50–100kA)
+- Air Circuit Breakers ACB 4P (same E-series, 1000A–6300A)
+- ACB Accessories (UVR, Shunt release, Geared motor, Auxiliary contacts, etc.)
+- Magnetic Contactors 3P AX/AF Series (AX09–AF750, 4kW–400kW, France/Sweden/Bulgaria)
+- Magnetic Contactors 4P AF Series (AF16–EK1000, 7.5kW–400kW)
+- Contactor Accessories (Auxiliary contacts CA/CAL/NF series, Mechanical interlocks VM series)
+- Thermal Overload Relays (TA25/TA42/TA75/TF96/TA200 — 0.63A–142A)
+- Motor Protection Circuit Breakers (MS116 — 0.63–16A, 16kA; MS132 — 0.63–32A, 50–100kA; MS165 — 28–63A)
+- MPCB Accessories (HK1-11, SK-1 auxiliary/signal contacts)
+- Power Capacitors (12.5 KVAR, 25 KVAR, RVC 12-stage PF relay)
+- Control Products: Indication lights CL2-523 (R/G/Y/L/C, 230VAC), Selector switches C2SS1/C3SS1, Push buttons CP1, Emergency stops CE4K1/CE4T, Phase/voltage monitoring relays CM-PFS/CM-PVS, Electronic timers CT-ERS/CT-ERE
+
+---
+
+## 7. Database Schema
+
+### Core Models
+
+```python
+# categories/models.py
+class Category(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    parent = models.ForeignKey('self', null=True, blank=True, 
+                                on_delete=models.SET_NULL, related_name='children')
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=100, blank=True)  # icon name or emoji
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name_plural = 'Categories'
+
+class Brand(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    logo = models.ImageField(upload_to='brands/', blank=True)
+    origin_country = models.CharField(max_length=100, blank=True)
+    supplier_name = models.CharField(max_length=200, blank=True)  # e.g. "AT Electricals"
+    supplier_contact = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+# products/models.py
+class Product(models.Model):
+    name = models.CharField(max_length=300)
+    slug = models.SlugField(unique=True)
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='products')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    series = models.CharField(max_length=200, blank=True)  # e.g. "NXB-63", "T MAX"
+    short_description = models.TextField(blank=True)
+    full_description = models.TextField(blank=True)
+    image = models.ImageField(upload_to='products/', blank=True)
+    datasheet_url = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # SEO fields
+    meta_title = models.CharField(max_length=60, blank=True)
+    meta_description = models.CharField(max_length=160, blank=True)
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
+    cat_no = models.CharField(max_length=100, blank=True)   # catalog/model number
+    description = models.CharField(max_length=300)           # e.g. "16 Amp 3 Pole IP44"
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    price_on_request = models.BooleanField(default=False)    # for "POR" items
+    specs = models.JSONField(default=dict, blank=True)       # flexible: amps, poles, IP, kA etc
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order', 'id']
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='products/')
+    alt_text = models.CharField(max_length=200, blank=True)
+    is_primary = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+```
+
+### Key Design Decisions
+
+- **JSONB specs field on variants** — Every product category has different filterable attributes. MCBs have poles/amps/breaking capacity. CTs have ratio/class/VA/window size. Capacitors have KVAR/voltage. JSONB stores all of these without needing separate tables per category.
+- **price_on_request boolean** — Many ABB and FICO products show "POR" or "On Request." Store this separately so the UI can show "Contact for Price" instead of empty.
+- **series field on Product** — Groups model variants under their parent series (e.g. all XT1C 160 variants are one product with many variants).
+- **Self-referencing Category** — Allows sub-categories (e.g. MCB → 1-Pole MCB → CHINT NXB-63).
+
+---
+
+## 8. PDF Data Ingestion Plan
+
+### Step 1 — Extract tables from PDFs
+
+```python
+# scripts/extract_pdf.py
+import pdfplumber
+import pandas as pd
+
+def extract_tables_from_pdf(pdf_path, output_csv):
+    all_rows = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for i, page in enumerate(pdf.pages):
+            tables = page.extract_tables()
+            for table in tables:
+                for row in table:
+                    if row and any(cell for cell in row):
+                        all_rows.append(row)
+    
+    df = pd.DataFrame(all_rows)
+    df.to_csv(output_csv, index=False)
+    print(f"Extracted {len(all_rows)} rows to {output_csv}")
+
+# Run for each PDF
+pdfs = [
+    ('AT_ELECTRICALS_PRICE_LIST_MARCH_2023.pdf', 'at_electricals.csv'),
+    ('CHINT_PRICE_LIST_2020.pdf', 'chint.csv'),
+    ('FICO_LIST.pdf', 'fico.csv'),
+    ('Himel_price_list_2022.pdf', 'himel.csv'),
+    ('JC_price-list-2023.pdf', 'pce.csv'),
+    ('Price_List_AVS_ABB_OCTOBER_2019.pdf', 'abb.csv'),
+    ('PCE_Industrial_Price_List.pdf', 'pce_industrial.csv'),
+]
+```
+
+### Step 2 — Manual CSV cleanup
+
+After extraction, open each CSV and manually fix:
+- Merged cells that extracted incorrectly
+- Headers that repeated mid-table
+- Rows that are section titles not product rows
+- "POR" / "On Request" values in price column
+- Missing cat numbers
+
+This takes 1–2 days. Do not skip this step. Bad data = broken frontend.
+
+### Step 3 — Django management command to import
+
+```python
+# management/commands/import_products.py
+import csv
+from django.core.management.base import BaseCommand
+from products.models import Brand, Category, Product, ProductVariant
+
+class Command(BaseCommand):
+    help = 'Import products from cleaned CSV files'
+    
+    def add_arguments(self, parser):
+        parser.add_argument('csv_file', type=str)
+        parser.add_argument('--brand', type=str)
+        parser.add_argument('--category', type=str)
+    
+    def handle(self, *args, **options):
+        brand = Brand.objects.get(slug=options['brand'])
+        category = Category.objects.get(slug=options['category'])
+        
+        with open(options['csv_file'], 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                product, _ = Product.objects.get_or_create(
+                    name=row['product_name'],
+                    brand=brand,
+                    category=category,
+                    defaults={'series': row.get('series', '')}
+                )
+                ProductVariant.objects.create(
+                    product=product,
+                    cat_no=row.get('cat_no', ''),
+                    description=row['description'],
+                    price=row['price'] if row['price'] not in ['POR', 'On Request', ''] else None,
+                    price_on_request=row['price'] in ['POR', 'On Request'],
+                    specs={
+                        'ampere': row.get('ampere', ''),
+                        'poles': row.get('poles', ''),
+                        'ip_rating': row.get('ip_rating', ''),
+                        'breaking_capacity': row.get('breaking_capacity', ''),
+                    }
+                )
+        self.stdout.write(f'Import complete.')
+```
+
+### Ingestion Priority Order
+
+Do one brand end-to-end first as your template, then repeat:
+
+1. **CHINT** — cleanest table structure, good starting point
+2. **Himel** — well structured, lots of products
+3. **PCE Industrial** — simple single-page table
+4. **AT Electricals (Tense/Kondas/Opas)** — multiple brands in one file
+5. **FICO** — complex, multiple CT types, do carefully
+6. **ABB** — multiple breaking capacity tiers per page, most complex
+
+---
+
+## 9. Next.js Project Structure
+
+```
+engmart-frontend/
+├── app/
+│   ├── layout.tsx                    # Root layout with navbar + footer
+│   ├── page.tsx                      # Homepage
+│   ├── about/
+│   │   └── page.tsx
+│   ├── contact/
+│   │   └── page.tsx
+│   ├── products/
+│   │   ├── page.tsx                  # All products / search results
+│   │   └── [slug]/
+│   │       └── page.tsx              # Product detail
+│   ├── categories/
+│   │   ├── page.tsx                  # All categories
+│   │   └── [slug]/
+│   │       └── page.tsx              # Category with products
+│   ├── brands/
+│   │   ├── page.tsx                  # All brands
+│   │   └── [slug]/
+│   │       └── page.tsx              # Brand with products
+│   └── search/
+│       └── page.tsx
+├── components/
+│   ├── layout/
+│   │   ├── Navbar.tsx
+│   │   ├── Footer.tsx
+│   │   ├── MobileMenu.tsx
+│   │   └── Breadcrumb.tsx
+│   ├── home/
+│   │   ├── HeroSection.tsx
+│   │   ├── FeaturedCategories.tsx
+│   │   ├── BrandCarousel.tsx
+│   │   ├── FeaturedProducts.tsx
+│   │   └── ContactCTA.tsx
+│   ├── products/
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductGrid.tsx
+│   │   ├── ProductDetail.tsx
+│   │   ├── VariantsTable.tsx
+│   │   ├── SpecsTable.tsx
+│   │   └── FilterSidebar.tsx
+│   ├── categories/
+│   │   ├── CategoryCard.tsx
+│   │   └── CategoryTree.tsx
+│   ├── brands/
+│   │   └── BrandCard.tsx
+│   ├── search/
+│   │   ├── SearchBar.tsx
+│   │   └── SearchResults.tsx
+│   └── ui/
+│       ├── Button.tsx
+│       ├── Badge.tsx
+│       ├── LoadingSkeleton.tsx
+│       ├── EmptyState.tsx
+│       └── InquiryForm.tsx
+├── lib/
+│   ├── api.ts                        # Axios API calls to Django
+│   ├── types.ts                      # TypeScript interfaces
+│   └── utils.ts
+├── hooks/
+│   ├── useProducts.ts
+│   ├── useCategories.ts
+│   └── useSearch.ts
+├── public/
+│   ├── images/
+│   └── icons/
+├── styles/
+│   └── globals.css
+├── next.config.js
+├── tailwind.config.js
+└── tsconfig.json
+```
+
+### Key API calls (lib/api.ts)
+
+```typescript
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+export const api = {
+  // Products
+  getProducts: (params?: Record<string, string>) => 
+    axios.get(`${API_BASE}/products/`, { params }),
+  getProduct: (slug: string) => 
+    axios.get(`${API_BASE}/products/${slug}/`),
+  
+  // Categories
+  getCategories: () => axios.get(`${API_BASE}/categories/`),
+  getCategoryProducts: (slug: string, params?: Record<string, string>) =>
+    axios.get(`${API_BASE}/categories/${slug}/products/`, { params }),
+  
+  // Brands
+  getBrands: () => axios.get(`${API_BASE}/brands/`),
+  getBrandProducts: (slug: string) =>
+    axios.get(`${API_BASE}/brands/${slug}/products/`),
+  
+  // Search
+  search: (query: string) =>
+    axios.get(`${API_BASE}/products/search/`, { params: { q: query } }),
+  
+  // Inquiry form
+  submitInquiry: (data: InquiryData) =>
+    axios.post(`${API_BASE}/inquiries/`, data),
+};
+```
+
+---
+
+## 10. Django Project Structure
+
+```
+engmart-backend/
+├── config/
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   └── production.py
+│   ├── urls.py
+│   └── wsgi.py
+├── apps/
+│   ├── categories/
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   └── admin.py
+│   ├── brands/
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   └── admin.py
+│   ├── products/
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── filters.py          # django-filter for filtering products
+│   │   └── admin.py
+│   └── inquiries/
+│       ├── models.py
+│       ├── serializers.py
+│       ├── views.py
+│       └── urls.py
+├── scripts/
+│   ├── extract_pdf.py
+│   └── management/
+│       └── commands/
+│           └── import_products.py
+├── media/                       # uploaded images
+├── static/
+├── requirements.txt
+├── Procfile                     # for Railway deployment
+└── manage.py
+```
+
+### API Endpoints
+
+```
+GET  /api/categories/                    # all categories (tree)
+GET  /api/categories/{slug}/             # single category
+GET  /api/categories/{slug}/products/   # products in category
+
+GET  /api/brands/                        # all brands
+GET  /api/brands/{slug}/                 # single brand
+GET  /api/brands/{slug}/products/        # products by brand
+
+GET  /api/products/                      # all products (paginated, filterable)
+GET  /api/products/{slug}/              # product detail with variants
+GET  /api/products/search/?q=query      # search
+
+POST /api/inquiries/                     # submit inquiry form
+```
+
+### Admin Panel Configuration
+
+```python
+# products/admin.py
+from django.contrib import admin
+from .models import Product, ProductVariant, ProductImage
+
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 1
+    fields = ['cat_no', 'description', 'price', 'price_on_request', 'specs', 'is_active']
+
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ['name', 'brand', 'category', 'is_active', 'is_featured']
+    list_filter = ['brand', 'category', 'is_active', 'is_featured']
+    search_fields = ['name', 'series']
+    prepopulated_fields = {'slug': ('name',)}
+    inlines = [ProductVariantInline, ProductImageInline]
+```
+
+---
+
+## 11. Page-by-Page Plan
+
+### Homepage (/)
+- Full-width hero with company tagline + search bar
+- "Shop by Category" grid — 8 main categories with icons
+- Brand logos carousel (8 brands: Tense, CHINT, ABB, Himel, FICO, PCE, Kondas, Opas)
+- Featured products section (hand-picked from admin)
+- "Why Choose Us" section (industrial quality, Karachi-based, multiple brands)
+- Contact CTA section
+
+### Category Listing (/categories)
+- Grid of all top-level categories with product counts
+- Sub-category trees expandable
+
+### Category Detail (/categories/[slug])
+- Category header with description
+- Filter sidebar (brand, price range, specs specific to category)
+- Product grid with pagination
+- Breadcrumb: Home > Categories > [Category Name]
+
+### Brand Listing (/brands)
+- Grid of all 8 brand logo cards with product counts
+- Filter/sort options
+
+### Brand Detail (/brands/[slug])
+- Brand info (origin, supplier, description)
+- All products from this brand in a grid with filters
+
+### Product Listing (/products)
+- Global search + filter page
+- Sidebar with: Brand, Category, Price range
+- Results grid, sortable by name/price
+
+### Product Detail (/products/[slug])
+- Product name, brand, category breadcrumb
+- Product image (placeholder icon if no image)
+- Short description + full description
+- **Variants Table** — all model numbers with specs and prices in one clean table
+- "Price on Request" badge for POR items
+- Related products (same category/brand)
+- Inquiry button that opens a modal form
+
+### Contact (/contact)
+- Contact form: Name, Company, Phone, Email, Message, Product Interest
+- Company address, phone, email
+- Google Maps embed (if client provides address)
+
+### About (/about)
+- Company info — same as current eng-mart site
+- Brands carried section
+
+### Search (/search?q=query)
+- Instant search results as user types
+- Filter by brand/category on results
+
+---
+
+## 12. UI/UX Design Direction
+
+### Color Palette
+
+```css
+/* Professional industrial theme */
+--primary: #1a2744;        /* Deep navy blue */
+--primary-light: #243460;  /* Lighter navy */
+--accent: #f97316;         /* Orange — energy, electrical */
+--accent-hover: #ea6c0a;   
+--background: #f8fafc;     /* Near white */
+--surface: #ffffff;        /* Cards */
+--text-primary: #0f172a;   /* Near black */
+--text-secondary: #475569; /* Gray */
+--border: #e2e8f0;         
+--success: #16a34a;        /* In stock / available */
+```
+
+### Typography
+
+```css
+/* Headers: Inter or Poppins — clean, modern */
+/* Body: Inter — highly readable */
+font-family: 'Inter', 'Segoe UI', sans-serif;
+```
+
+### Animations (Framer Motion)
+
+```typescript
+// Page transition — fade + slight slide up
+export const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+};
+
+// Card hover — subtle scale + shadow
+export const cardHover = {
+  whileHover: { scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+  transition: { duration: 0.2 }
+};
+
+// Stagger children — for category grids
+export const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.07 } }
+};
+
+export const staggerItem = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 }
+};
+```
+
+### Component Design Rules
+
+- Product cards: white background, subtle shadow, brand badge top-left, price badge bottom-right, hover animation
+- Category cards: dark navy background, white icon + text, orange accent on hover
+- Tables for variants: clean, zebra stripe, sticky header, horizontal scroll on mobile
+- Buttons: solid orange for primary CTA, outlined navy for secondary
+- Loading states: skeleton screens, not spinners — feels faster
+- Mobile: hamburger menu, bottom navigation bar for key pages
+
+---
+
+## 13. SEO Strategy
+
+### Technical SEO (implement from day 1)
+
+**Every page gets:**
+```typescript
+// app/products/[slug]/page.tsx
+export async function generateMetadata({ params }) {
+  const product = await getProduct(params.slug);
+  return {
+    title: `${product.name} | ${product.brand} | Eng-Mart`,
+    description: `Buy ${product.name} by ${product.brand} in Pakistan. ${product.short_description}. Contact Eng-Mart Karachi for pricing.`,
+    openGraph: {
+      title: product.name,
+      description: product.short_description,
+      images: [product.image],
+    },
+  };
+}
+```
+
+**JSON-LD structured data on product pages:**
+```typescript
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  brand: { '@type': 'Brand', name: product.brand.name },
+  description: product.short_description,
+  offers: product.variants.map(v => ({
+    '@type': 'Offer',
+    priceCurrency: 'PKR',
+    price: v.price,
+    availability: 'https://schema.org/InStock',
+    seller: { '@type': 'Organization', name: 'Eng-Mart' }
+  }))
+};
+```
+
+**Sitemap auto-generation:**
+```typescript
+// app/sitemap.ts
+export default async function sitemap() {
+  const products = await getAllProducts();
+  const categories = await getAllCategories();
+  
+  return [
+    { url: 'https://eng-mart.com', lastModified: new Date() },
+    ...categories.map(c => ({
+      url: `https://eng-mart.com/categories/${c.slug}`,
+      lastModified: new Date()
+    })),
+    ...products.map(p => ({
+      url: `https://eng-mart.com/products/${p.slug}`,
+      lastModified: p.updated_at
+    }))
+  ];
+}
+```
+
+### Target Keywords (Pakistan market)
+
+These are actual searches people make. Optimize category + brand pages for these:
+
+| Page | Target Keyword |
+|------|---------------|
+| CHINT MCB page | "chint mcb price pakistan", "chint nxb-63 karachi" |
+| ABB MCB page | "abb mcb price pakistan", "abb sh201 karachi" |
+| Himel MCCB page | "himel mccb price pakistan" |
+| PCE Sockets page | "industrial socket plug pakistan", "pce socket karachi" |
+| FICO CT page | "current transformer price pakistan", "fico ct karachi" |
+| Tense meters page | "digital panel meter price pakistan" |
+| Category — MCBs | "mcb price in pakistan", "miniature circuit breaker karachi" |
+| Category — Contactors | "magnetic contactor price pakistan" |
+| Homepage | "electrical products supplier karachi", "switchgear supplier pakistan" |
+
+### What will make rankings happen faster
+
+1. SSR pages Google can actually read (the biggest change from current site)
+2. Every product page has a unique title with the model number and "Pakistan" / "Karachi"
+3. Google Search Console submitted day 1 with sitemap
+4. Google Business Profile set up with Karachi address
+5. Model numbers in URLs — people search exact model numbers like "NXB-63 3P C32 price" and you'll be the only result showing a real price
+
+---
+
+## 14. Phase-by-Phase Timeline
+
+### Phase 0 — Setup (Days 1–4)
+- [ ] Client signs off on scope (get it in writing — WhatsApp is fine)
+- [ ] Collect PKR 110,000 advance
+- [ ] Create GitHub repository
+- [ ] Set up Django project locally with PostgreSQL
+- [ ] Set up Next.js project locally
+- [ ] Register domain (in client's name)
+- [ ] Create Vercel account (client's email) and Railway account (client's email)
+- [ ] Deploy empty skeleton to both to confirm pipeline works
+
+### Phase 1 — Backend + Data (Days 5–14)
+- [ ] Build Django models (Category, Brand, Product, ProductVariant)
+- [ ] Configure Django admin panel (clean, easy for client to use)
+- [ ] Build REST API endpoints with DRF
+- [ ] Write PDF extraction script
+- [ ] Extract all 7 PDFs to CSV
+- [ ] Manual CSV cleanup (this takes time — budget 2 full days)
+- [ ] Run import management command for all brands
+- [ ] Verify data in admin panel — spot check 50+ products
+- [ ] Test all API endpoints with Postman
+
+### Phase 2 — Frontend (Days 15–28)
+- [ ] Set up Tailwind + Framer Motion
+- [ ] Build layout components (Navbar, Footer, Breadcrumb)
+- [ ] Build Homepage (Hero, Categories, Brands, Featured Products)
+- [ ] Build Category listing and detail pages
+- [ ] Build Brand listing and detail pages
+- [ ] Build Product listing with filter sidebar
+- [ ] Build Product detail with variants table
+- [ ] Build Search functionality
+- [ ] Build Contact page with working form
+- [ ] Build About page
+- [ ] Mobile responsive pass on all pages
+- [ ] Add all animations and transitions
+- [ ] **Collect PKR 60,000 second payment here**
+
+### Phase 3 — SEO + Polish (Days 29–33)
+- [ ] Add generateMetadata to all dynamic pages
+- [ ] Add JSON-LD structured data to product pages
+- [ ] Create sitemap.ts
+- [ ] Create robots.txt
+- [ ] Optimize all images with next/image
+- [ ] Run Lighthouse audit — fix anything below 80
+- [ ] Cross-browser test (Chrome, Firefox, Safari, Edge)
+- [ ] Mobile device test (Android Chrome, iOS Safari)
+- [ ] Fix all bugs found in testing
+
+### Phase 4 — Launch (Days 34–38)
+- [ ] Final client review — collect feedback
+- [ ] Address feedback changes (max 2 rounds)
+- [ ] Deploy frontend to Vercel with custom domain
+- [ ] Deploy backend to Railway
+- [ ] Point domain DNS to Vercel
+- [ ] SSL certificate (automatic on Vercel)
+- [ ] Set up Google Search Console, verify domain, submit sitemap
+- [ ] Set up Google Analytics (optional, ask client)
+- [ ] **Collect PKR 50,000 final payment**
+- [ ] Hand over admin credentials + 1-page usage guide
+- [ ] 30-day bug fix period starts
+
+---
+
+## 15. Scope Boundary — What Costs Extra
+
+Be clear about this with the client before starting. Write it down.
+
+| Request | Your response | Extra charge |
+|---------|--------------|-------------|
+| Add WhatsApp button | Separate feature | PKR 5,000–10,000 |
+| Add new supplier PDF | Separate data work | PKR 10,000–15,000 per supplier |
+| Add online cart | Major feature | PKR 80,000–150,000 |
+| Add payment gateway | Complex + regulated | PKR 100,000+ |
+| Add blog section | Separate feature | PKR 20,000–30,000 |
+| Add Urdu language | Major localization work | PKR 40,000+ |
+| Monthly maintenance | Ongoing retainer | PKR 15,000–25,000/month |
+| SEO content writing | Ongoing retainer | PKR 10,000–20,000/month |
+| Change design after approval | Revision fee | PKR 5,000 per round |
+
+**Rule:** Any feature not in section 2 of this document is out of scope. Be polite but firm. "That's a great idea, it's not in our current contract but I can quote it separately."
+
+---
+
+## 16. Launch Checklist
+
+### Backend
+- [ ] DEBUG = False in production settings
+- [ ] SECRET_KEY in environment variable (not in code)
+- [ ] ALLOWED_HOSTS configured correctly
+- [ ] Database backed up before launch
+- [ ] CORS_ALLOWED_ORIGINS set to production domain only
+- [ ] Static files served via WhiteNoise
+- [ ] Media files URL configured
+
+### Frontend
+- [ ] NEXT_PUBLIC_API_URL points to production backend
+- [ ] No console.log statements left in code
+- [ ] All images using next/image
+- [ ] All pages have unique meta title and description
+- [ ] sitemap.xml accessible at /sitemap.xml
+- [ ] robots.txt accessible at /robots.txt
+- [ ] 404 page exists and styled
+
+### DNS & Domain
+- [ ] A record or CNAME pointing to Vercel
+- [ ] www redirect set up
+- [ ] SSL certificate active (green padlock in browser)
+- [ ] Test site loads on mobile data (not just WiFi)
+
+### SEO
+- [ ] Google Search Console verified
+- [ ] Sitemap submitted to Search Console
+- [ ] Google Business Profile created/updated with new URL
+- [ ] Check site on Google with `site:eng-mart.com` after 1 week
+
+---
+
+## 17. Post-Launch Handover
+
+### What you give the client
+
+1. **Admin panel URL + login credentials** (e.g. eng-mart.com/admin)
+2. **1-page guide (PDF)** covering:
+   - How to add a new product
+   - How to edit a product price
+   - How to deactivate a product
+   - How to view inquiry form submissions
+3. **GitHub repository access** — the client owns the code
+4. **Vercel + Railway account credentials** — registered in their email
+5. **Domain registrar login** — registered in their name
+
+### What happens after 30 days
+
+Your 30-day free bug fix period ends. After that, any new work is billed separately. Offer a monthly retainer (PKR 15,000–25,000/month) that covers:
+- Hosting monitoring
+- Bug fixes up to 2 hours/month
+- Price list updates when suppliers send new PDFs
+- Minor content changes
+
+This recurring income is worth pitching professionally — "would you like a maintenance plan so you're never stuck if something breaks?"
+
+---
+
+## Quick Reference — Key Numbers
+
+| Item | Detail |
+|------|--------|
+| Total budget | PKR 220,000 |
+| Advance payment | PKR 110,000 (before starting) |
+| Mid payment | PKR 60,000 (end of Phase 2) |
+| Final payment | PKR 50,000 (on launch) |
+| Domain cost | ~PKR 2,000/year |
+| Hosting (Vercel + Railway) | PKR 0–1,500/month |
+| Timeline | 5–6 weeks |
+| Total brands | 8 (Tense, Kondas, Opas, CHINT, FICO, Himel, PCE, ABB) |
+| Approx total product variants | 1,500–2,500 across all PDFs |
+| Post-launch bug fix period | 30 days free |
+| Recommended maintenance retainer | PKR 15,000–25,000/month |
+
+---
+
+*Document prepared for Eng-Mart rebuild project. All prices in PKR. Scope is final as agreed — any additions require separate written agreement and additional charge.*

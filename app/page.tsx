@@ -1,0 +1,235 @@
+import { Navbar } from '@/components/navbar'
+import { PromoBanners } from '@/components/promo-banners'
+import { HeroVideo } from '@/components/hero-video'
+import { FeaturedSection } from '@/components/featured-section'
+import { Footer } from '@/components/footer'
+import Link from 'next/link'
+import { CATEGORIES, BRANDS, STATS, TESTIMONIALS } from '@/lib/data'
+
+/* ── Stats Strip ── */
+function StatsStrip() {
+  return (
+    <section className="bg-primary py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+          {STATS.map((stat, i) => (
+            <div key={i} className="text-white">
+              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                {stat.value.toLocaleString()}{stat.suffix}
+              </div>
+              <div className="text-sm font-bold text-white/90 mt-1">{stat.label}</div>
+              <div className="text-xs text-white/60 mt-0.5">{stat.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Category Grid ── */
+function CategorySection() {
+  return (
+    <section className="py-12 sm:py-16 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <span className="section-label">Browse By Type</span>
+          <h2 className="section-title mt-1">Product Categories</h2>
+          <p className="text-muted-foreground text-sm mt-2 max-w-xl mx-auto">
+            From MCBs to ACBs — every industrial electrical product category in one place
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          {CATEGORIES.slice(0, 10).map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/categories/${cat.slug}`}
+              className="store-card group flex flex-col items-center text-center p-4 sm:p-5"
+            >
+              <div
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform duration-200 shadow-sm"
+                style={{ backgroundColor: `${cat.color}15`, border: `1px solid ${cat.color}30` }}
+              >
+                {cat.icon}
+              </div>
+              <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                {cat.short}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">{cat.count}+ Products</p>
+            </Link>
+          ))}
+        </div>
+        <div className="text-center mt-6">
+          <Link href="/categories" className="btn-secondary text-sm inline-flex">
+            View All Categories →
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Brand Showcase ── */
+function BrandsSection() {
+  const BRAND_ICONS: Record<string, string> = {
+    'ABB': '🔴', 'CHINT': '🔵', 'Himel': '🟡', 'FICO Hi-Tech': '🟠',
+    'PCE': '🟢', 'Tense': '⚡', 'Kondas': '🔷', 'Opas': '🌿',
+  }
+  return (
+    <section className="py-12 bg-secondary/40 border-y border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <span className="section-label">Authorized Distributor</span>
+          <h2 className="section-title mt-1">World-Class Brands</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          {BRANDS.map(brand => (
+            <Link
+              key={brand.slug}
+              href={`/brands/${brand.slug}`}
+              className="store-card group flex flex-col items-center text-center p-3 sm:p-4"
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mb-2 shadow-sm"
+                style={{ backgroundColor: `${brand.color}18`, border: `1px solid ${brand.color}30` }}
+              >
+                {BRAND_ICONS[brand.name] || '⚡'}
+              </div>
+              <p className="text-xs font-extrabold text-foreground group-hover:text-primary transition-colors leading-tight">
+                {brand.name}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{brand.country}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Why Choose Us ── */
+function WhyUsSection() {
+  const features = [
+    { icon: '✅', title: 'Genuine Products', desc: '100% authentic from authorized distributors. Zero counterfeits.' },
+    { icon: '🌍', title: '8 Global Brands', desc: 'ABB, CHINT, Himel, FICO, PCE, Tense, Kondas & Opas — all in one place.' },
+    { icon: '⚡', title: 'Fast Availability', desc: 'Large stock for fast-moving items. Ready for immediate dispatch.' },
+    { icon: '💰', title: 'Best Pricing', desc: 'Competitive market prices. Volume discounts for contractors.' },
+    { icon: '📞', title: 'Expert Support', desc: 'Technical team helps you select the right product for your application.' },
+    { icon: '📍', title: 'Karachi Based', desc: 'Located in Sarafa Bazar, Karachi. Walk-in welcome Mon–Sat.' },
+  ]
+  return (
+    <section className="py-12 sm:py-16 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <span className="section-label">Why Choose Eng-Mart</span>
+          <h2 className="section-title mt-1">The Eng-Mart Advantage</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {features.map((f, i) => (
+            <div key={i} className="store-card p-5 sm:p-6 flex gap-4">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-xl shrink-0">
+                {f.icon}
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground text-sm mb-1">{f.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Testimonials ── */
+function TestimonialsSection() {
+  // Hidden until real client quotes are added to TESTIMONIALS in lib/data.ts —
+  // the previous entries were invented names presented as real reviews.
+  if (TESTIMONIALS.length === 0) return null
+  return (
+    <section className="py-12 sm:py-16 bg-foreground text-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <span className="text-xs font-bold text-primary tracking-widest uppercase">Client Reviews</span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
+            Trusted by Industry Professionals
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {TESTIMONIALS.map((t, i) => (
+            <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/8 transition-colors">
+              {/* Stars */}
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(t.rating)].map((_, si) => (
+                  <span key={si} className="text-yellow-400 text-sm">★</span>
+                ))}
+              </div>
+              <p className="text-white/80 text-xs leading-relaxed mb-4 italic">"{t.text}"</p>
+              <div className="border-t border-white/10 pt-3">
+                <p className="text-sm font-bold text-white">{t.name}</p>
+                <p className="text-[10px] text-white/50 mt-0.5">{t.role} · {t.company}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── CTA Banner ── */
+function CTASection() {
+  return (
+    <section className="py-14 bg-gradient-to-br from-primary via-[color-mix(in_srgb,var(--primary)_85%,black)] to-[color-mix(in_srgb,var(--primary)_55%,black)] relative overflow-hidden">
+      <div className="absolute inset-0 opacity-10">
+        <svg viewBox="0 0 800 400" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="80" stroke="white" strokeWidth="1"/>
+          <circle cx="700" cy="300" r="120" stroke="white" strokeWidth="1"/>
+          <circle cx="400" cy="200" r="200" stroke="white" strokeWidth="1"/>
+        </svg>
+      </div>
+      <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 tracking-tight">
+          Ready to Order? Get a Quote Today
+        </h2>
+        <p className="text-white/85 text-sm sm:text-base mb-8 max-w-xl mx-auto leading-relaxed">
+          Contact our sales team for bulk pricing, technical specifications, and fast delivery across Karachi and Pakistan.
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          <Link href="/contact" className="inline-flex items-center gap-2 bg-white text-primary font-bold px-7 py-3 rounded-lg hover:opacity-90 transition-opacity shadow-lg text-sm">
+            Request a Quote →
+          </Link>
+          <a
+            href="https://wa.me/923112763951?text=Hi%20Eng-Mart%2C%20I%20need%20a%20quote%20for%20electrical%20products."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[var(--color-whatsapp)] hover:opacity-90 text-white font-bold px-7 py-3 rounded-lg transition-opacity shadow-lg text-sm"
+          >
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2a10 10 0 00-8.49 15.27L2 22l4.87-1.49A10 10 0 1012 2z"/></svg>
+            WhatsApp Us
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Main Page ── */
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <HeroVideo />
+      <StatsStrip />
+      <PromoBanners />
+      <CategorySection />
+      <FeaturedSection />
+      <BrandsSection />
+      <WhyUsSection />
+      <TestimonialsSection />
+      <CTASection />
+      <Footer />
+    </div>
+  )
+}
