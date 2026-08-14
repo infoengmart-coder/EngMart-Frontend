@@ -167,7 +167,11 @@ export function AdminSidebar({ collapsed, onToggle, mobileOpen, onMobileClose }:
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+        {/* min-h-0 is what actually makes this scroll: a flex child defaults to
+            min-height:auto, so the nav grew to fit its content instead of
+            shrinking, and overflow-y-auto never had anything to scroll.
+            overscroll-contain stops the scroll from chaining to the page. */}
+        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-3 px-3 space-y-4">
           {NAV_SECTIONS.map((section) => (
             <div key={section.label}>
               {!collapsed && (

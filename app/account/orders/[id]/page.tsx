@@ -39,6 +39,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const { orders, ordersLoaded, cancelOrder, requestReturn, reorderItems } = useAccount()
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'return' | null>(null)
   const [confirmBusy, setConfirmBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   const order = orders.find(o => o.id === id)
 
@@ -148,13 +149,22 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
     router.push('/cart')
   }
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!confirmAction) return
     setConfirmBusy(true)
-    if (confirmAction === 'cancel') cancelOrder(order.id)
-    else requestReturn(order.id)
-    setConfirmBusy(false)
-    setConfirmAction(null)
+    setActionError('')
+    try {
+      // These now hit the API, so they can genuinely fail (e.g. the order was
+      // shipped in the meantime). Surface that instead of silently pretending.
+      if (confirmAction === 'cancel') await cancelOrder(order.id)
+      else await requestReturn(order.id)
+      setConfirmAction(null)
+    } catch (err: any) {
+      setActionError(err?.message || 'That did not work. Please try again or contact us.')
+      setConfirmAction(null)
+    } finally {
+      setConfirmBusy(false)
+    }
   }
 
   const showCancelButton = order.status === 'Pending' || order.status === 'Confirmed'
@@ -162,6 +172,12 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div className="no-print rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm p-3">
+          {actionError}
+        </div>
+      )}
+
       {/* Back button */}
       <div className="no-print">
         <Link href="/account/orders" className="text-xs text-muted-foreground hover:text-primary font-bold flex items-center gap-1.5 transition-colors">

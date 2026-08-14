@@ -917,6 +917,87 @@ export async function getMyQuotes(): Promise<{ count: number; results: Quotation
   return authFetch('/account/quotes/')
 }
 
+/**
+ * Ask for a password reset link.
+ *
+ * Answers the same whether or not the email is registered — do not "improve"
+ * this by reporting unknown addresses, or the form becomes a way to test which
+ * of the client's customers have accounts.
+ */
+export async function requestPasswordReset(email: string): Promise<{ detail: string }> {
+  const res = await fetch(`${API_BASE}/auth/password-reset/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.detail || data.email?.[0] || 'Request failed')
+  return data
+}
+
+/** Complete a password reset using the emailed uid + token. */
+export async function confirmPasswordReset(
+  payload: { uid: string; token: string; password: string },
+): Promise<{ detail: string }> {
+  const res = await fetch(`${API_BASE}/auth/password-reset/confirm/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.detail || data.password?.[0] || 'Reset failed')
+  return data
+}
+
+/** Public headline catalog numbers for the storefront hero. */
+export type CatalogStats = { products: number; brands: number; categories: number }
+
+export async function getCatalogStats(): Promise<CatalogStats> {
+  return apiClientFetch<CatalogStats>('/products/stats/')
+}
+
+// ─── Notifications ───────────────────────────────────────────
+
+export type NotificationItem = {
+  id: number
+  kind: string
+  title: string
+  body: string
+  link: string
+  created_at: string
+  is_read: boolean
+}
+
+export async function getNotifications(): Promise<{ results: NotificationItem[]; unread: number }> {
+  return authFetch('/notifications/')
+}
+
+/** Mark specific notifications read, or all of them when ids is omitted. */
+export async function markNotificationsRead(ids?: number[]): Promise<void> {
+  await authFetch('/notifications/read/', {
+    method: 'POST',
+    body: JSON.stringify(ids ? { ids } : {}),
+  })
+}
+
+/** Send the shop's reply to a customer inquiry (emails them). */
+export async function replyToInquiry(id: number, reply: string): Promise<InquiryResponse> {
+  return authFetch(`/inquiries/${id}/reply/`, {
+    method: 'POST',
+    body: JSON.stringify({ reply }),
+  })
+}
+
+/** Cancel one of the signed-in customer's own orders (pending/confirmed only). */
+export async function cancelMyOrder(orderNumber: string): Promise<OrderResponse> {
+  return authFetch(`/account/orders/${orderNumber}/cancel/`, { method: 'POST' })
+}
+
+/** Request a return on a delivered order. */
+export async function requestMyOrderReturn(orderNumber: string): Promise<OrderResponse> {
+  return authFetch(`/account/orders/${orderNumber}/return/`, { method: 'POST' })
+}
+
 /** Contact/support messages sent by the signed-in customer. */
 export async function getMyInquiries(): Promise<{ count: number; results: InquiryResponse[] }> {
   return authFetch('/account/inquiries/')

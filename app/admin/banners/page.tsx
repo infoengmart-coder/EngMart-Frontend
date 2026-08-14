@@ -493,7 +493,9 @@ export default function BannersPage() {
             </button>
           )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Single column: the hero IS one full-width banner, so a 3-column grid
+            left two empty cells beside it — the gap on the right of this page. */}
+        <div className="grid grid-cols-1 gap-4">
           {heroBanners.map((b) => (
             <BannerCard
               key={b.id}

@@ -7,6 +7,7 @@ import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { getProduct, submitInquiry, submitQuotation, mediaUrl, ProductDetail as ApiProductDetail, formatPrice, formatPriceRange } from '@/lib/api'
 import { useCart } from '@/lib/cart'
+import { useAuthGate } from '@/lib/auth-gate'
 import { useSiteSettings } from '@/lib/site-settings'
 import { ProductCard } from '@/components/product-card'
 
@@ -98,6 +99,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const { settings: SITE } = useSiteSettings()
   const { slug } = use(params)
   const { add, isInCart, getItemKey } = useCart()
+  const { requireAuth } = useAuthGate()
 
   const [product, setProduct] = useState<ApiProductDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -217,6 +219,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const inCart = isInCart(itemKey)
 
   const handleAddToCart = () => {
+    // Cart requires an account — prompt guests instead of silently adding.
+    requireAuth(() => doAddToCart())
+  }
+
+  const doAddToCart = () => {
     const isPOR = activeVariant ? activeVariant.price_on_request || !activeVariant.price : product.has_price_on_request
     const unitPrice = currentPrice || 0
     const mainImg = product.images?.find(i => i.is_primary)?.image || product.image || ''

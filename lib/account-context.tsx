@@ -2,10 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useCart, CartItem } from './cart'
+import { useAuth } from './auth'
 import {
   getMyOrders, getMyQuotes, getWishlist, removeFromWishlist,
   getSavedAddresses, createSavedAddress, updateSavedAddress, deleteSavedAddress,
+  cancelMyOrder, requestMyOrderReturn, submitInquiry, getMyInquiries,
   type OrderResponse, type QuotationData, type WishlistEntry, type SavedAddressData,
+  type InquiryResponse,
 } from './api'
 
 export type OrderStatus = 'Pending' | 'Confirmed' | 'Packaging' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Return Requested'
@@ -109,11 +112,11 @@ type AccountCtx = {
   updateAddress: (id: string, address: Partial<Address>) => void
   deleteAddress: (id: string) => void
   setDefaultAddress: (id: string) => void
-  cancelOrder: (id: string) => void
-  requestReturn: (id: string) => void
+  cancelOrder: (id: string) => Promise<Order>
+  requestReturn: (id: string) => Promise<Order>
   reorderItems: (orderItems: OrderItem[]) => void
   acceptQuote: (id: string) => void
-  addInquiry: (subject: string, message: string) => void
+  addInquiry: (subject: string, message: string) => Promise<void>
   toggleWishlist: (slug: string) => void
   isInWishlist: (slug: string) => boolean
 }
@@ -232,6 +235,50 @@ const QUOTE_STATUS_MAP: Record<string, QuoteStatus> = {
   expired: 'Expired',
 }
 
+const INQUIRY_STATUS_MAP: Record<string, Inquiry['status']> = {
+  new: 'Open',
+  read: 'Open',
+  replied: 'Replied',
+  closed: 'Resolved',
+}
+
+function apiInquiryToAccountInquiry(i: InquiryResponse): Inquiry {
+  // The message is stored as "subject\n\nbody" (the contact form has no
+  // separate subject field), so split it back for display.
+  const raw = i.message || ''
+  const sep = raw.indexOf('\n\n')
+  const subject = i.product_interest || (sep > 0 ? raw.slice(0, sep) : raw.slice(0, 60))
+  const body = sep > 0 ? raw.slice(sep + 2) : raw
+
+  const replies: Inquiry['replies'] = [
+    {
+      sender: 'user',
+      name: i.name,
+      message: body,
+      timestamp: (i.created_at || '').slice(0, 16).replace('T', ' '),
+    },
+  ]
+  // `admin_reply` only — NOT `notes`, which is the shop's private working
+  // remarks and must never be shown to the customer.
+  if ((i as any).admin_reply) {
+    replies.push({
+      sender: 'admin',
+      name: 'Eng-Mart Support',
+      message: (i as any).admin_reply,
+      timestamp: (((i as any).replied_at || (i as any).updated_at) || '').slice(0, 16).replace('T', ' '),
+    })
+  }
+
+  return {
+    id: `TKT-${i.id}`,
+    date: (i.created_at || '').slice(0, 10),
+    subject,
+    message: body,
+    status: INQUIRY_STATUS_MAP[i.status] || 'Open',
+    replies,
+  }
+}
+
 function apiQuoteToAccountQuote(q: QuotationData): Quote {
   return {
     id: q.quote_number,
@@ -261,6 +308,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const { add } = useCart()
+  // Drives the API reload below — account data must follow the signed-in user.
+  const { user } = useAuth()
 
   // Hydrate from localStorage
   useEffect(() => {
@@ -289,6 +338,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false
 
     async function loadFromApi() {
+      // Show skeletons while a signed-in customer's data is being fetched,
+      // instead of briefly rendering "no orders" with the previous state.
+      setOrdersLoaded(false)
       const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('engmart_tokens')
       if (!hasToken) {
         // Signed out — never show a previous session's real data.
@@ -304,11 +356,12 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
       setAuthed(true)
       try {
-        const [orderRes, quoteRes, wishRes, addrRes] = await Promise.all([
+        const [orderRes, quoteRes, wishRes, addrRes, inqRes] = await Promise.all([
           getMyOrders().catch(() => null),
           getMyQuotes().catch(() => null),
           getWishlist().catch(() => null),
           getSavedAddresses().catch(() => null),
+          getMyInquiries().catch(() => null),
         ])
         if (cancelled) return
 
@@ -323,6 +376,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         // after the customer signs out.
         if (orderRes) setOrders((orderRes.results || []).map(apiOrderToAccountOrder))
         if (quoteRes) setQuotes((quoteRes.results || []).map(apiQuoteToAccountQuote))
+        if (inqRes) setInquiries((inqRes.results || []).map(apiInquiryToAccountInquiry))
       } catch {
         // Offline or API down — leave whatever is already in state.
       } finally {
@@ -333,7 +387,15 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
     loadFromApi()
     return () => { cancelled = true }
-  }, [])
+    // Re-run whenever the signed-in user changes.
+    //
+    // With an empty dependency array this ran ONCE, on mount — at which point
+    // the visitor is signed out, so it loaded nothing and stopped. Logging in
+    // updated the auth context but never re-triggered this, so the account
+    // pages stayed empty until the user manually refreshed the page (which
+    // remounted the provider). Keying on the user id also clears the previous
+    // customer's data immediately on logout or account switch.
+  }, [user?.id])
 
   const save = useCallback((key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data))
@@ -420,37 +482,27 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   }, [save, authed])
 
   // Order Handlers
-  const cancelOrder = useCallback((id: string) => {
-    setOrders(prev => {
-      const updated = prev.map(o => {
-        if (o.id !== id) return o
-        const timestamp = new Date().toLocaleString('en-US', { hour12: true })
-        return {
-          ...o,
-          status: 'Cancelled' as OrderStatus,
-          timeline: [...o.timeline, { status: 'Cancelled' as OrderStatus, timestamp }]
-        }
-      })
-      save('engmart_orders', updated)
-      return updated
-    })
-  }, [save])
+  /**
+   * Cancel an order.
+   *
+   * These used to change React state only, so the shop never learned about a
+   * cancellation and the order reverted to Pending on the next load. They now
+   * call the API, which also emails the sales inbox, and return the server's
+   * answer so the page can show a real error (e.g. "already shipped").
+   */
+  const cancelOrder = useCallback(async (id: string) => {
+    const updated = await cancelMyOrder(id)
+    const mapped = apiOrderToAccountOrder(updated)
+    setOrders(prev => prev.map(o => (o.id === id ? mapped : o)))
+    return mapped
+  }, [])
 
-  const requestReturn = useCallback((id: string) => {
-    setOrders(prev => {
-      const updated = prev.map(o => {
-        if (o.id !== id) return o
-        const timestamp = new Date().toLocaleString('en-US', { hour12: true })
-        return {
-          ...o,
-          status: 'Return Requested' as OrderStatus,
-          timeline: [...o.timeline, { status: 'Return Requested' as OrderStatus, timestamp }]
-        }
-      })
-      save('engmart_orders', updated)
-      return updated
-    })
-  }, [save])
+  const requestReturn = useCallback(async (id: string) => {
+    const updated = await requestMyOrderReturn(id)
+    const mapped = apiOrderToAccountOrder(updated)
+    setOrders(prev => prev.map(o => (o.id === id ? mapped : o)))
+    return mapped
+  }, [])
 
   // Reorder — rebuild cart lines from the live catalog references.
   const reorderItems = useCallback((orderItems: OrderItem[]) => {
@@ -535,28 +587,26 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   }, [save])
 
   // Inquiries Handlers
-  const addInquiry = useCallback((subject: string, message: string) => {
-    setInquiries(prev => {
-      const newInquiry: Inquiry = {
-        id: `TKT-${Math.floor(3000 + Math.random() * 1000)}`,
-        date: new Date().toISOString().split('T')[0],
-        subject,
-        message,
-        status: 'Open',
-        replies: [
-          {
-            sender: 'user',
-            name: 'Engr. Kamran Ahmed',
-            message,
-            timestamp: new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]
-      }
-      const updated = [newInquiry, ...prev]
-      save('engmart_inquiries', updated)
-      return updated
+  /**
+   * Raise a support ticket.
+   *
+   * This used to build a fake ticket in local state with a random TKT number
+   * and a hardcoded customer name — the shop never received anything. It now
+   * posts to the real inquiries endpoint, which emails the sales inbox, then
+   * re-reads the customer's tickets so the list shows the server's copy.
+   */
+  const addInquiry = useCallback(async (subject: string, message: string) => {
+    await submitInquiry({
+      name: user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Customer',
+      email: user?.email || '',
+      phone: (user as any)?.phone || '',
+      company: (user as any)?.company || '',
+      message: `${subject}\n\n${message}`,
+      product_interest: subject,
     })
-  }, [save])
+    const res = await getMyInquiries().catch(() => null)
+    if (res) setInquiries((res.results || []).map(apiInquiryToAccountInquiry))
+  }, [user])
 
   // Wishlist Handlers
   const toggleWishlist = useCallback((slug: string) => {

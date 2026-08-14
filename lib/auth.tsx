@@ -26,7 +26,7 @@ type AuthTokens = {
 
 type AuthCtx = {
   user: UserProfile | null
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string; user?: UserProfile }>
+  login: (username: string, password: string, remember?: boolean) => Promise<{ ok: boolean; error?: string; user?: UserProfile }>
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>
   /** Persist name changes to the API (backend only allows first/last name). */
   updateUser: (data: { name?: string; first_name?: string; last_name?: string }) => Promise<{ ok: boolean; error?: string }>
@@ -51,28 +51,56 @@ const AuthContext = createContext<AuthCtx | null>(null)
 const LS_TOKENS_KEY = 'engmart_tokens'
 const LS_USER_KEY = 'engmart_user'
 
+/**
+ * "Remember me" decides WHERE the session is kept:
+ *
+ *   on  -> localStorage   : survives closing the browser (stay signed in)
+ *   off -> sessionStorage : cleared when the tab/browser closes
+ *
+ * Reads check both, so an existing session keeps working either way. Before
+ * this, tokens always went to localStorage and the toggle did nothing at all.
+ */
+function readAny(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key) ?? localStorage.getItem(key)
+  } catch { return null }
+}
+
 function getStoredTokens(): AuthTokens | null {
   try {
-    const raw = localStorage.getItem(LS_TOKENS_KEY)
+    const raw = readAny(LS_TOKENS_KEY)
     return raw ? JSON.parse(raw) : null
   } catch { return null }
 }
 
 function getStoredUser(): UserProfile | null {
   try {
-    const raw = localStorage.getItem(LS_USER_KEY)
+    const raw = readAny(LS_USER_KEY)
     return raw ? JSON.parse(raw) : null
   } catch { return null }
 }
 
-function storeAuth(tokens: AuthTokens, user: UserProfile) {
-  localStorage.setItem(LS_TOKENS_KEY, JSON.stringify(tokens))
-  localStorage.setItem(LS_USER_KEY, JSON.stringify(user))
+function storeAuth(tokens: AuthTokens, user: UserProfile, remember: boolean = true) {
+  const store = remember ? localStorage : sessionStorage
+  const other = remember ? sessionStorage : localStorage
+  try {
+    store.setItem(LS_TOKENS_KEY, JSON.stringify(tokens))
+    store.setItem(LS_USER_KEY, JSON.stringify(user))
+    // Never leave a copy behind in the other store, or signing out of one
+    // would silently restore the session from the other.
+    other.removeItem(LS_TOKENS_KEY)
+    other.removeItem(LS_USER_KEY)
+  } catch { /* private mode — session stays in memory only */ }
 }
 
 function clearAuth() {
-  localStorage.removeItem(LS_TOKENS_KEY)
-  localStorage.removeItem(LS_USER_KEY)
+  // Clear BOTH stores — "remember me" may have written to either.
+  for (const store of [localStorage, sessionStorage]) {
+    try {
+      store.removeItem(LS_TOKENS_KEY)
+      store.removeItem(LS_USER_KEY)
+    } catch {}
+  }
   // Account data cached for the previous session is personal (order numbers,
   // addresses, phone numbers, totals). Clearing tokens alone would leave it
   // readable by the next person to use this browser.
@@ -128,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, remember: boolean = true) => {
     try {
       const res = await fetch(`${API_BASE}/auth/login/`, {
         method: 'POST',
@@ -140,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const errMsg = data.non_field_errors?.[0] || data.detail || data.username?.[0] || 'Login failed'
         return { ok: false, error: errMsg }
       }
-      storeAuth({ access: data.access, refresh: data.refresh }, data.user)
+      storeAuth({ access: data.access, refresh: data.refresh }, data.user, remember)
       setUser(data.user)
       return { ok: true, user: data.user }
     } catch (e: any) {

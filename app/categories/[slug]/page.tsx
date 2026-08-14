@@ -90,7 +90,7 @@ function FilterSidebar({
           so ticking others previously made it list the entire catalog. */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Categories</p>
-        <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-72 overflow-y-auto overscroll-contain pr-1">
           {categories.map(cat => {
             const active = cat.slug === activeSlug
             return (
@@ -113,7 +113,7 @@ function FilterSidebar({
           list never offers a brand that filters down to zero results. */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Brands</p>
-        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-72 overflow-y-auto overscroll-contain pr-1">
           {brands.map(brand => (
             <button key={brand.name} onClick={() => onToggleBrand(brand.name)} className="flex items-center gap-3 cursor-pointer group w-full text-left min-h-10 lg:min-h-0">
               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
@@ -327,7 +327,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
 
           {/* Desktop Sidebar exactly matching Products Page */}
           <aside className="hidden lg:block w-[260px] shrink-0">
-            <div className="sticky top-24 p-6 bg-card rounded-3xl border border-border shadow-sm">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain p-6 bg-card rounded-3xl border border-border shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-black text-foreground">Filters</h2>
                 {selectedBrands.length > 0 && (

@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { getBrands, mediaUrl, type Brand } from '@/lib/api'
-import { Zap } from 'lucide-react'
 
 const FALLBACK_COLOR = 'var(--primary)'
 
@@ -81,30 +80,46 @@ export default function BrandsPage() {
                   <Link href={`/brands/${brand.slug}`}>
                     {/* Brand header */}
                     <div
-                      className="h-36 flex items-center justify-center relative overflow-hidden bg-background"
+                      className="h-40 flex items-center justify-center relative overflow-hidden bg-card"
                       style={{
                         background: `radial-gradient(circle at center, color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 7%, transparent) 0%, transparent 70%)`,
                         borderBottom: `1px solid color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 8%, transparent)`,
                       }}
                     >
-                      <motion.div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm"
-                        style={{
-                          background: `linear-gradient(135deg, color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 8%, transparent), color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 2%, transparent))`,
-                          border: `1.5px solid color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 15%, transparent)`
-                        }}
-                        whileHover={{ scale: 1.08, rotate: 3 }}
-                        transition={{ type: 'spring', stiffness: 300 }}
-                      >
-                        {brand.logo
-                          ? <img src={mediaUrl(brand.logo)} alt={brand.name} loading="lazy" className="w-full h-full object-contain p-2" />
-                          : <Zap className="w-7 h-7" style={{ color: brand.color || FALLBACK_COLOR }} />}
-                      </motion.div>
+                      {brand.logo ? (
+                        // A real logo gets the space to be legible — the old
+                        // 64px tinted tile squashed wide wordmarks like
+                        // "Schneider Electric" into an unreadable smudge.
+                        <img
+                          src={mediaUrl(brand.logo)}
+                          alt={brand.name}
+                          loading="lazy"
+                          className="max-h-20 max-w-[70%] object-contain transition-transform duration-300 group-hover:scale-[1.06]"
+                        />
+                      ) : (
+                        // No logo on file: a coloured monogram reads better than
+                        // a generic bolt icon repeated across every card.
+                        <div
+                          className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black tracking-tight transition-transform duration-300 group-hover:scale-[1.06]"
+                          style={{
+                            background: `color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 10%, transparent)`,
+                            border: `1.5px solid color-mix(in srgb, ${brand.color || FALLBACK_COLOR} 20%, transparent)`,
+                            color: brand.color || FALLBACK_COLOR,
+                          }}
+                        >
+                          {brand.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+
+                      {/* Product count as a corner pill — scannable at a glance */}
+                      <span className="absolute top-3 right-3 text-[10px] font-black px-2 py-1 rounded-full bg-card border border-border text-muted-foreground">
+                        {brand.product_count ?? 0}
+                      </span>
                     </div>
 
                     {/* Brand info */}
-                    <div className="p-6">
-                      <h2 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                    <div className="p-5">
+                      <h2 className="text-base font-black text-foreground mb-1 group-hover:text-primary transition-colors">
                         {brand.name}
                       </h2>
                       <div className="flex items-center gap-2 mb-4">
@@ -112,9 +127,11 @@ export default function BrandsPage() {
                         <span className="text-border">·</span>
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">{brand.product_count ?? 0} Products</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-5 font-semibold">
-                        Supplier: <span className="font-bold text-foreground">{brand.supplier_name || '—'}</span>
-                      </p>
+                      {brand.supplier_name && (
+                        <p className="text-[11px] text-muted-foreground mb-4 font-semibold truncate">
+                          Supplier: <span className="font-bold text-foreground">{brand.supplier_name}</span>
+                        </p>
+                      )}
 
                       <div
                         className="flex items-center justify-between px-4 py-3 rounded-xl transition-colors duration-200"

@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { NotificationBell } from "@/components/notification-bell";
 import { useAuth } from "@/lib/auth";
 import { ReactNode } from "react";
 
@@ -65,17 +66,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         onMobileClose={() => setMobileOpen(false)}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
-        <header className="md:hidden sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
+        {/* Top bar. Shown at every size so the notification bell has a home on
+            desktop too; the hamburger and logo stay mobile-only. */}
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="Open admin menu"
-            className="flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-secondary transition-colors cursor-pointer"
+            className="md:hidden flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-secondary transition-colors cursor-pointer"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <Link href="/admin" className="flex items-center gap-2">
+          <Link href="/admin" className="md:hidden flex items-center gap-2">
             <Image
               src="/header_logo.png"
               alt="Eng-Mart"
@@ -85,6 +87,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             />
             <span className="text-sm font-bold text-foreground">Admin</span>
           </Link>
+
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
+          </div>
         </header>
         <main className="flex-1 overflow-x-hidden flex flex-col min-w-0">
           {children}

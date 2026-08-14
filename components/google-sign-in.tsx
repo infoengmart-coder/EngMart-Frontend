@@ -1,26 +1,24 @@
 'use client'
 
-// Sign in with Google, rendered by Google Identity Services.
+// "Continue with Google", brokered by Clerk.
 //
-// The browser never sees our backend's secrets: Google hands us a short-lived
-// ID token, we post it to /api/auth/google/, and the SERVER verifies it with
-// Google before issuing our own JWTs. Nothing here is trusted client-side.
+// Clerk runs the Google OAuth flow and hands back a short-lived session token.
+// That token is posted to /api/auth/clerk/, where the SERVER verifies its
+// signature against Clerk's public keys and reads the customer's verified email
+// from Clerk's Backend API before issuing our own JWTs. Nothing here is trusted
+// client-side, and no secret ever reaches the browser.
 //
-// Renders nothing at all when NEXT_PUBLIC_GOOGLE_CLIENT_ID is unset, so the
-// site works normally before the client id exists.
+// The Clerk session is signed out immediately after the exchange: Django stays
+// the single source of truth for who is logged in, so there is never a second
+// session to keep in sync. See app/sso-callback/page.tsx for the other half.
+//
+// Renders nothing when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is unset, so the site
+// works normally before Clerk is configured.
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useAuth, useSignIn } from '@clerk/nextjs'
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-const GSI_SRC = 'https://accounts.google.com/gsi/client'
-
-declare global {
-  interface Window {
-    google?: any
-  }
-}
+const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || ''
 
 interface GoogleSignInProps {
   /** Where to go after a successful sign-in. */
@@ -29,78 +27,78 @@ interface GoogleSignInProps {
   dividerLabel?: string
 }
 
-export function GoogleSignIn({ redirectTo = '/account', dividerLabel }: GoogleSignInProps) {
-  const buttonRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+/** Google's mark. Inline so the button paints with the page, no network fetch. */
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.34A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.01-2.34Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58Z" />
+    </svg>
+  )
+}
+
+/**
+ * Public entry point.
+ *
+ * The key check MUST live out here, in a component that calls no Clerk hooks.
+ * `useSignIn()` throws when there is no ClerkProvider above it, and because
+ * hooks cannot be called conditionally, a guard placed after the hook runs too
+ * late — it took the whole production build down with a prerender error on
+ * /login, not just this button.
+ */
+export function GoogleSignIn(props: GoogleSignInProps) {
+  if (!PUBLISHABLE_KEY) return null
+  return <GoogleSignInButton {...props} />
+}
+
+function GoogleSignInButton({ redirectTo = '/account', dividerLabel }: GoogleSignInProps) {
+  // Clerk v7's hook returns a signal: `signIn` is null until Clerk has loaded,
+  // and sso() reports failure by returning an error rather than throwing.
+  const { signIn } = useSignIn()
+  const { isSignedIn, signOut } = useAuth()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    if (!CLIENT_ID) return
+  async function handleClick() {
+    if (!signIn) return
+    setBusy(true)
+    setError('')
+    try {
+      // A Clerk session can survive an abandoned or failed attempt. Starting a
+      // new sign-in on top of one makes Clerk reject it with a 400 on
+      // /client/sign_ins — which reads as a fresh bug rather than leftover
+      // state. Clear it first so every click starts from the same place.
+      if (isSignedIn) {
+        await signOut().catch(() => {})
+      }
+      // Absolute URLs: Clerk hands these to Google, which rejects relative ones.
+      const origin = window.location.origin
 
-    async function handleCredential(response: { credential?: string }) {
-      if (!response?.credential) return
-      setBusy(true)
-      setError('')
-      try {
-        const res = await fetch(`${API_BASE}/auth/google/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ credential: response.credential }),
-        })
-        const data = await res.json().catch(() => null)
-        if (!res.ok) {
-          setError(data?.detail || 'Google sign-in failed. Please try again.')
-          setBusy(false)
-          return
-        }
-        // Same storage keys the password login uses, so the rest of the app
-        // (AuthProvider, authFetch, account pages) needs no special casing.
-        localStorage.setItem('engmart_tokens', JSON.stringify({
-          access: data.access, refresh: data.refresh,
-        }))
-        localStorage.setItem('engmart_user', JSON.stringify(data.user))
-        // Full navigation so every provider re-reads the new tokens.
-        window.location.href = redirectTo
-      } catch {
-        setError('Could not reach the server. Please check your connection.')
+      // Mark that a sign-in is genuinely in flight. /sso-callback uses this to
+      // tell a real return-from-Google apart from someone opening that URL
+      // directly — in which case Clerk renders its own generic sign-in card
+      // over our page. sessionStorage, so it dies with the tab.
+      try { sessionStorage.setItem('engmart_sso_pending', '1') } catch {}
+      const { error: ssoError } = await signIn.sso({
+        strategy: 'oauth_google',
+        // Where Clerk returns the browser to once Google is done.
+        redirectCallbackUrl: `${origin}/sso-callback`,
+        // Final destination. The app's own target rides along in ?next= because
+        // this navigates away from the page entirely.
+        redirectUrl: `${origin}/sso-callback?next=${encodeURIComponent(redirectTo)}`,
+      })
+      if (ssoError) {
+        setError('Could not start Google sign-in. Please try again.')
         setBusy(false)
       }
+      // On success control does not return here — the browser goes to Google.
+    } catch {
+      setError('Could not start Google sign-in. Please try again.')
+      setBusy(false)
     }
-
-    function initialise() {
-      if (!window.google?.accounts?.id || !buttonRef.current) return
-      window.google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: handleCredential,
-        auto_select: false,
-      })
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: 'outline',
-        size: 'large',
-        width: 320,
-        text: 'continue_with',
-        shape: 'rectangular',
-      })
-    }
-
-    // Load the Google script once, even if both login and register mount it.
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${GSI_SRC}"]`)
-    if (existing) {
-      if (window.google?.accounts?.id) initialise()
-      else existing.addEventListener('load', initialise)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = GSI_SRC
-    script.async = true
-    script.defer = true
-    script.onload = initialise
-    document.head.appendChild(script)
-  }, [redirectTo, router])
-
-  // No client id configured yet — render nothing rather than a dead button.
-  if (!CLIENT_ID) return null
+  }
 
   return (
     <div className="w-full">
@@ -114,13 +112,21 @@ export function GoogleSignIn({ redirectTo = '/account', dividerLabel }: GoogleSi
         </div>
       )}
 
-      <div className="flex justify-center">
-        <div ref={buttonRef} aria-busy={busy} />
-      </div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={!signIn || busy}
+        aria-busy={busy}
+        className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-border
+                   bg-card px-4 py-2.5 min-h-11 text-sm font-semibold text-foreground
+                   transition-colors hover:bg-secondary
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+                   disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+      >
+        <GoogleMark />
+        {busy ? 'Redirecting to Google…' : 'Continue with Google'}
+      </button>
 
-      {busy && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">Signing you in…</p>
-      )}
       {error && (
         <p className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-center text-xs text-destructive">
           {error}

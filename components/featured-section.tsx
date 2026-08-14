@@ -6,7 +6,15 @@ import Link from 'next/link'
 import { ProductCard } from '@/components/product-card'
 import { getProducts, Product } from '@/lib/api'
 
-const FILTERS = ['All', 'ABB', 'CHINT', 'Himel', 'FICO']
+/** Fisher-Yates — unbiased, and does not mutate the caller's array. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
 
 export function FeaturedSection() {
   const [products, setProducts] = useState<Product[]>([])
@@ -20,13 +28,21 @@ export function FeaturedSection() {
         // Try fetching featured products first
         let res = await getProducts({ is_featured: true })
         let list = res.results || []
-        
-        // If no products marked as featured, fallback to all products
+
+        // Nothing flagged as featured — show a rotating slice of the catalog.
+        // A random page (rather than always page 1) means a returning visitor
+        // sees different stock each visit instead of the same 24 items forever.
         if (list.length === 0) {
-          res = await getProducts()
+          const first = await getProducts({ page_size: 24 })
+          const pages = Math.max(1, Math.ceil((first.count || 24) / 24))
+          // Cap the range: deep pages are alphabetically obscure accessories.
+          const page = 1 + Math.floor(Math.random() * Math.min(pages, 12))
+          res = page === 1 ? first : await getProducts({ page_size: 24, page })
           list = res.results || []
         }
-        setProducts(list)
+
+        // Shuffle so the grid order varies too, not just which page we landed on.
+        setProducts(shuffle(list))
       } catch (err) {
         console.error('Failed to fetch homepage featured products:', err)
       } finally {
@@ -35,6 +51,14 @@ export function FeaturedSection() {
     }
     loadFeatured()
   }, [])
+
+  // Brand tabs are derived from what is actually on screen. They used to be a
+  // hardcoded ABB/CHINT/Himel/FICO list, which now that the grid rotates would
+  // frequently show "no products found" for a brand that simply is not in this
+  // batch.
+  const FILTERS = ['All', ...Array.from(
+    new Set(products.map(p => p.brand_name || p.brand?.name || '').filter(Boolean))
+  ).slice(0, 5)]
 
   const filteredProducts = products.filter(p => {
     if (activeFilter === 'All') return true

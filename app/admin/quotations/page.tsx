@@ -29,69 +29,6 @@ interface QuotationRequest {
   status: "Pending" | "Quoted" | "Converted" | "Expired";
 }
 
-const INITIAL_RFQS: QuotationRequest[] = [
-  {
-    id: "RFQ-2084",
-    name: "Engr. Kamran Ahmed",
-    company: "KA Electrical Works",
-    email: "kamran@kaelectrical.pk",
-    phone: "+92-321-234-5678",
-    date: "10:45 AM",
-    fullDate: "July 12, 2026 at 10:45 AM",
-    items: [
-      { name: "CHINT NXB-63 MCB 1P 16A", catNo: "NXB-63-1P-16C", qty: 150 },
-      { name: "ABB SH201 MCB 1P 20A", catNo: "SH201-C20", qty: 50 },
-      { name: "ABB AX-Series Contactor 9A", catNo: "AX09-30-10", qty: 20 },
-    ],
-    notes: "Requesting special distributor price list pricing for ongoing panel board installations at SITE Karachi. Need delivery within 3 days.",
-    status: "Pending",
-  },
-  {
-    id: "RFQ-2083",
-    name: "M. Rashid Siddiqui",
-    company: "National Industrial Corp",
-    email: "rashid@nic.pk",
-    phone: "+92-300-111-2233",
-    date: "Yesterday",
-    fullDate: "July 11, 2026 at 4:15 PM",
-    items: [
-      { name: "Himel HDM3 MCCB 3P 125A", catNo: "HDM3-125", qty: 12, quotedPrice: 8200 },
-      { name: "FICO ELC Current Transformer 100/5A", catNo: "ELC-60", qty: 36, quotedPrice: 610 },
-    ],
-    notes: "Please quote with our wholesale discount accounts profile terms (Net 30). Invoice will be paid by bank transfer.",
-    status: "Quoted",
-  },
-  {
-    id: "RFQ-2082",
-    name: "Tariq Mehmood",
-    company: "TM Engineering",
-    email: "tariq@tmeng.pk",
-    phone: "+92-312-987-6543",
-    date: "Jul 10",
-    fullDate: "July 10, 2026 at 11:30 AM",
-    items: [
-      { name: "PCE Industrial Socket IP44 16A 3P", catNo: "IP44-16A-3P", qty: 80, quotedPrice: 1700 },
-      { name: "Kondas ZNPP Capacitor 25 KVAR", catNo: "ZNPP-25", qty: 10, quotedPrice: 4200 },
-    ],
-    notes: "Requires formal PDF quotation for government audit submission.",
-    status: "Converted",
-  },
-  {
-    id: "RFQ-2081",
-    name: "Usman Ghani",
-    company: "UG Panel Builders",
-    email: "usman@ugpanel.pk",
-    phone: "+92-300-333-4455",
-    date: "Jul 8",
-    fullDate: "July 8, 2026 at 2:00 PM",
-    items: [
-      { name: "Tense DJA-96 Ammeter LED", catNo: "DJA-96", qty: 15 },
-    ],
-    notes: "Check stock availability for immediate pickup in Karachi.",
-    status: "Expired",
-  },
-];
-
 const STATUS_CONFIG: Record<string, string> = {
   Pending: "bg-[color-mix(in_srgb,var(--color-warning)_12%,transparent)] text-[var(--color-warning)] border-[color-mix(in_srgb,var(--color-warning)_25%,transparent)]",
   Quoted: "bg-primary/10 text-primary border-primary/20",

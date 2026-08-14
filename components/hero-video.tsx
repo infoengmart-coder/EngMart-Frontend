@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { getBanners, mediaUrl, type BannerData } from '@/lib/api'
+import { getBanners, getCatalogStats, mediaUrl, type BannerData, type CatalogStats } from '@/lib/api'
 
 /**
  * Homepage hero, driven by the `hero` Banner record.
@@ -22,13 +22,17 @@ const FALLBACK = {
   cta_text_2: 'Get Quote',
   cta_link_2: '/contact',
   video_url: '/herovideo.mp4',
-  highlights: ['📦 2,500+ Products', '🌍 8 Global Brands', '🤝 500+ Clients', '📍 Karachi Based'],
+  // No hardcoded counts here — real figures come from /products/stats/
+  // below. The old '2,500+ Products / 8 Global Brands' undercounted the
+  // catalog by half once the price lists were imported.
+  highlights: ['📍 Karachi Based', '🚚 Nationwide Delivery'],
 }
 
 const HERO_CACHE_KEY = 'engmart-hero-banner'
 
 export function HeroVideo() {
   const [hero, setHero] = useState<BannerData | null>(null)
+  const [stats, setStats] = useState<CatalogStats | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -45,6 +49,9 @@ export function HeroVideo() {
         try { sessionStorage.setItem(HERO_CACHE_KEY, JSON.stringify(row)) } catch {}
       })
       .catch(() => {}) // keep cached copy (or fallback) on fetch failure
+
+    // Live catalog figures for the stat pills (cached an hour server-side).
+    getCatalogStats().then(setStats).catch(() => {})
   }, [])
 
   const badge = hero?.badge || FALLBACK.badge
@@ -54,7 +61,17 @@ export function HeroVideo() {
   const ctaLink = hero?.cta_link || FALLBACK.cta_link
   const ctaText2 = hero?.cta_text_2 || FALLBACK.cta_text_2
   const ctaLink2 = hero?.cta_link_2 || FALLBACK.cta_link_2
-  const highlights = hero?.highlights?.length ? hero.highlights : FALLBACK.highlights
+  // Admin-authored highlights win; otherwise show live catalog figures so the
+  // headline numbers can never go stale again.
+  const liveHighlights = stats
+    ? [
+        `📦 ${stats.products.toLocaleString('en-PK')}+ Products`,
+        `🌍 ${stats.brands} Global Brands`,
+        '📍 Karachi Based',
+        '🚚 Nationwide Delivery',
+      ]
+    : FALLBACK.highlights
+  const highlights = hero?.highlights?.length ? hero.highlights : liveHighlights
 
   // A relative path is served from /public; anything else goes through mediaUrl
   // so an uploaded file resolves against the API host rather than the frontend.

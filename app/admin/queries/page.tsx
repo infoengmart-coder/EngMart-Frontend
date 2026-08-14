@@ -5,7 +5,7 @@ import {
   Search, Mail, Phone, Calendar, Reply, Trash2, CheckCircle2, 
   Clock, Inbox, Check, Eye 
 } from "lucide-react";
-import { getInquiries, updateInquiryStatus, type InquiryResponse } from "@/lib/api";
+import { getInquiries, updateInquiryStatus, replyToInquiry, type InquiryResponse } from "@/lib/api";
 
 const STATUS_CONFIG: Record<string, { badge: string; dot: string }> = {
 
@@ -22,6 +22,9 @@ export default function QueriesPage() {
   const [search, setSearch] = useState("");
   const [tabFilter, setTabFilter] = useState<"All" | "new" | "replied" | "closed">("All");
   const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyError, setReplyError] = useState("");
+  const [replySent, setReplySent] = useState("");
 
   const loadInquiries = async () => {
     setLoading(true);
@@ -57,9 +60,21 @@ export default function QueriesPage() {
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !activeQuery) return;
-    await handleStatusChange(activeQuery.id, "replied");
-    setReplyText("");
-    alert("Reply successfully sent to " + activeQuery.email);
+    // This used to throw the text away, flip the status, and pop an alert
+    // claiming the reply had been sent. It now actually emails the customer.
+    setSendingReply(true);
+    setReplyError("");
+    try {
+      const updated = await replyToInquiry(activeQuery.id, replyText.trim());
+      setQueries(prev => prev.map(q => (q.id === updated.id ? updated : q)));
+      setReplyText("");
+      setReplySent(`Reply emailed to ${updated.email}`);
+      setTimeout(() => setReplySent(""), 5000);
+    } catch (err: any) {
+      setReplyError(err?.message || "Could not send the reply. Please try again.");
+    } finally {
+      setSendingReply(false);
+    }
   };
 
   const handleDelete = (id: number) => {

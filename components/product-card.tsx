@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useCart } from '@/lib/cart'
+import { useAuthGate } from '@/lib/auth-gate'
 import { mediaUrl } from '@/lib/api'
 
 // Structurally compatible with the lib/api Product shape; legacy static
@@ -46,6 +47,7 @@ export function ProductCard({ product, imageUrl, index = 0 }: ProductCardProps) 
   }
 
   const { add, isInCart } = useCart()
+  const { requireAuth } = useAuthGate()
   const inCart = isInCart(product.slug)
 
   // Price calculation
@@ -81,6 +83,11 @@ export function ProductCard({ product, imageUrl, index = 0 }: ProductCardProps) 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    // Guests are asked to sign in first — the cart belongs to an account.
+    requireAuth(() => doAdd())
+  }
+
+  const doAdd = () => {
 
     // Determine the best price to use
     let unitPrice = 0

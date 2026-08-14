@@ -25,7 +25,7 @@ const renderLucideIcon = (name: string, className: string = "w-5 h-5") => {
 const TIMELINE = [
   { year: 'Founded', title: 'Established in Karachi', desc: 'Eng-Mart began operations in the industrial heart of Karachi, Sarafa Bazar, as a specialized supplier of industrial electrical products.', icon: 'Building' },
   { year: 'Growth', title: 'Expanded Brand Portfolio', desc: 'Partnered with international brands including ABB, CHINT, Himel, and FICO Hi-Tech to offer a comprehensive product range.', icon: 'TrendingUp' },
-  { year: 'Today', title: 'Pakistan\'s Sourcing Hub', desc: '500+ satisfied clients across Karachi. Sourcing for 8 global brands with 2,500+ products in stock.', icon: 'Globe' },
+  { year: 'Today', title: 'Pakistan\'s Sourcing Hub', desc: 'Serving contractors, panel builders and factories across Karachi, with thousands of products from dozens of global brands in stock.', icon: 'Globe' },
 ]
 
 const TEAM = [
@@ -65,7 +65,7 @@ export default function AboutPage() {
               About <span className="text-gradient-cyan">Eng-Mart</span>
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-2xl leading-relaxed">
-              Pakistan's premier supplier of premium industrial electrical products — serving engineers, contractors, and facilities across Karachi with genuine products from 8 global brands.
+              Pakistan's premier supplier of premium industrial electrical products — serving engineers, contractors, and facilities across Karachi with genuine products from dozens of global brands.
             </p>
           </motion.div>
         </div>
@@ -88,7 +88,7 @@ export default function AboutPage() {
                   We recognized that the Pakistani market was flooded with counterfeit and low-quality electrical components — a serious safety risk for industrial installations. Our solution was to become authorized distributors for world-class brands, ensuring every product that leaves our store is 100% genuine.
                 </p>
                 <p>
-                  Today, we stock over 2,500 products from 8 global brands including ABB, CHINT, Himel, FICO Hi-Tech, PCE, Tense, Kondas, and Opas — making us the go-to one-stop shop for industrial electrical sourcing in Karachi.
+                  Today we stock thousands of products from dozens of global brands including ABB, CHINT, Himel, FICO Hi-Tech, PCE, Schneider, Siemens, Hyundai and LS Electric — making us the go-to one-stop shop for industrial electrical sourcing in Karachi.
                 </p>
               </div>
             </motion.div>

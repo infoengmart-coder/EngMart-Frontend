@@ -10,6 +10,7 @@ import { useCart } from '@/lib/cart'
 import { useAuth } from '@/lib/auth'
 import { useSiteSettings } from '@/lib/site-settings'
 import { useScrollLock } from '@/components/confirm-dialog'
+import { NotificationBell } from '@/components/notification-bell'
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -36,6 +37,16 @@ export function Navbar() {
   const acctRef = useRef<HTMLDivElement>(null)
   const { count } = useCart()
   const { user, logout, isAuthenticated, isAdmin } = useAuth()
+
+  // What to call the signed-in customer in the header. `name` falls back to the
+  // username server-side, which can be an email-derived string like
+  // "syedzakihaider200680" — long and unfriendly — so prefer the real first
+  // name when we have one and keep the rest as a last resort.
+  const accountLabel =
+    user?.first_name?.trim()
+    || user?.name?.trim().split(/\s+/)[0]
+    || 'My Account'
+  const accountInitial = (accountLabel[0] || 'A').toUpperCase()
 
   // Lock body scroll while the mobile drawer is open
   useScrollLock(mobileOpen)
@@ -391,11 +402,21 @@ export function Navbar() {
                         setAcctOpen(false)
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 min-h-10 rounded-md bg-primary text-white hover:opacity-90 font-semibold text-sm transition-opacity shadow-sm"
-                    aria-label="My Account"
+                    className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 min-h-10 rounded-md bg-primary text-white hover:opacity-90 font-semibold text-sm transition-opacity shadow-sm"
+                    aria-label={`My account — signed in as ${accountLabel}`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    <span className="hidden lg:inline">My Account</span>
+                    {/* Initial avatar, then the first name — a signed-in
+                        storefront should say WHO is signed in, not just that
+                        someone is. Falls back to "My Account" for an account
+                        with no name yet. */}
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                                 bg-white/20 text-[11px] font-extrabold uppercase leading-none"
+                      aria-hidden="true"
+                    >
+                      {accountInitial}
+                    </span>
+                    <span className="hidden lg:inline max-w-[9rem] truncate">{accountLabel}</span>
                   </Link>
                   <div className={`absolute right-0 top-full pt-2 ${acctOpen ? 'opacity-100 visible' : 'opacity-0 invisible'} group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-[opacity,visibility] duration-200 z-50`}>
                     <div className="w-56 bg-card border border-border rounded-xl shadow-xl p-2.5 space-y-0.5 text-xs text-foreground">
@@ -425,6 +446,8 @@ export function Navbar() {
               )}
 
               {/* Cart */}
+              <NotificationBell />
+
               <Link href="/cart" className="relative flex items-center justify-center gap-1.5 px-2 py-2 min-w-10 min-h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" aria-label="Cart">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                 <span className="text-sm font-medium hidden lg:inline">Cart</span>

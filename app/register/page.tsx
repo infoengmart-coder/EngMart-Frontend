@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [step, setStep] = useState<'personal' | 'business'>('personal')
   const [noBusiness, setNoBusiness] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
 
   const { register } = useAuth()
   const router = useRouter()
@@ -50,7 +51,21 @@ export default function RegisterPage() {
       setStep('personal')
       return setError('Passwords do not match.')
     }
-    if (!noBusiness && !form.businessType) return setError('Please select your business type.')
+    if (!form.terms) {
+      setStep('personal')
+      return setError('Please accept the Terms and Privacy Policy to continue.')
+    }
+    // They said they have a business, so make them actually describe it.
+    if (!noBusiness) {
+      if (!form.company.trim()) {
+        setStep('business')
+        return setError('Please enter your company name, or tick “I don’t have a business”.')
+      }
+      if (!form.businessType) {
+        setStep('business')
+        return setError('Please select your business type.')
+      }
+    }
     setLoading(true)
     setError('')
     const nameParts = form.fullName.trim().split(' ')
@@ -83,6 +98,20 @@ export default function RegisterPage() {
 
   const f = (key: keyof typeof form, val: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: val }))
+
+  /**
+   * Is the Personal tab complete enough to move on?
+   *
+   * The continue/submit button is hidden until this is true, so the customer
+   * never clicks a button that silently does nothing.
+   */
+  const personalReady =
+    form.fullName.trim().length > 1 &&
+    form.phone.trim().length >= 7 &&
+    /^\S+@\S+\.\S+$/.test(form.email) &&
+    form.password.length >= 8 &&
+    form.password === form.confirm &&
+    form.terms
 
   return (
     <div className="min-h-screen bg-background relative flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans overflow-hidden">
@@ -268,32 +297,9 @@ export default function RegisterPage() {
                         <p className="text-[11px] text-destructive font-semibold pl-1">Passwords don't match</p>
                       )}
 
-                      {/* Action buttons */}
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setStep('business')}
-                          className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
-                        >
-                          Next Info
-                        </button>
-                        <Link
-                          href="/login"
-                          className="btn-secondary py-3.5 rounded-xl text-xs font-bold w-full justify-center text-center bg-card border border-border text-foreground hover:bg-background hover:border-slate-300 transition-[background-color,border-color,transform] shadow-[0_2px_4px_rgba(0,0,0,0.02)] active:scale-[0.99]"
-                        >
-                          Sign In
-                        </Link>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="business"
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-4"
-                    >
-                      {/* "I don't have a business" toggle */}
-                      <label className="flex items-center gap-2.5 cursor-pointer group min-h-10">
+                      {/* Do you have a business? Asked here so the customer knows
+                          up front whether a second step is coming. */}
+                      <label className="flex items-center gap-2.5 cursor-pointer group min-h-10 pt-1">
                         <div className="relative">
                           <input
                             type="checkbox"
@@ -309,8 +315,76 @@ export default function RegisterPage() {
                         </span>
                       </label>
 
-                      {/* Stacked Business Card — hidden when noBusiness is toggled */}
-                      {!noBusiness && (
+                      {/* Terms live on this tab: with the toggle on, this is the
+                          last screen before the account is created. */}
+                      <label className="flex items-start gap-2.5 cursor-pointer group min-h-10">
+                        <div className="relative mt-0.5">
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={form.terms}
+                            onChange={e => f('terms', e.target.checked)}
+                          />
+                          <div className={`w-9 h-5 rounded-full transition-colors duration-200 ${form.terms ? 'bg-primary' : 'bg-slate-300'}`} />
+                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-200 ${form.terms ? 'transform translate-x-4' : ''}`} />
+                        </div>
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground leading-snug transition-colors">
+                          I agree to Eng-Mart's{' '}
+                          <a href="/terms" className="text-primary hover:underline font-bold">Terms</a> and{' '}
+                          <a href="/terms" className="text-primary hover:underline font-bold">Privacy Policy</a>
+                        </span>
+                      </label>
+
+                      {/* Action buttons */}
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        {/* Hidden until the form is actually completable, so the
+                            customer is never invited to press a dead button. */}
+                        {personalReady ? (
+                          noBusiness ? (
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center disabled:opacity-50 shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
+                            >
+                              {loading ? 'Creating...' : 'Create Account'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setStep('business')}
+                              className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
+                            >
+                              Next Info
+                            </button>
+                          )
+                        ) : (
+                          <p className="col-span-1 self-center text-[11px] font-semibold text-muted-foreground leading-snug">
+                            Complete the fields above and accept the terms to continue.
+                          </p>
+                        )}
+                        <Link
+                          href="/login"
+                          className="btn-secondary py-3.5 rounded-xl text-xs font-bold w-full justify-center text-center bg-card border border-border text-foreground hover:bg-background hover:border-slate-300 transition-[background-color,border-color,transform] shadow-[0_2px_4px_rgba(0,0,0,0.02)] active:scale-[0.99]"
+                        >
+                          Sign In
+                        </Link>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="business"
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="space-y-4"
+                    >
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Tell us about your business so we can apply the right trade
+                        pricing. Both fields are required.
+                      </p>
+
+                      {/* Business details are mandatory on this step: reaching it
+                          at all means the customer said they DO have a business. */}
+                      {true && (
                         <div className="bg-card border-2 border-border rounded-2xl overflow-hidden shadow-sm divide-y-2 divide-border focus-within:border-primary transition-colors">
                           
                           {/* Company Name */}
@@ -332,49 +406,75 @@ export default function RegisterPage() {
                             <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            <select
-                              required={!noBusiness}
-                              className="w-full text-xs text-foreground outline-none bg-transparent appearance-none cursor-pointer font-medium pr-8"
-                              value={form.businessType}
-                              onChange={e => f('businessType', e.target.value)}
+                            {/* Custom listbox: a native <select> renders with the
+                                OS's own chrome, which looked out of place next to
+                                the styled inputs and could not be themed. */}
+                            <button
+                              type="button"
+                              onClick={() => setTypeOpen(o => !o)}
+                              aria-haspopup="listbox"
+                              aria-expanded={typeOpen}
+                              className={`w-full flex items-center justify-between text-xs font-medium bg-transparent outline-none cursor-pointer pr-1 ${
+                                form.businessType ? 'text-foreground' : 'text-muted-foreground'
+                              }`}
                             >
-                              <option value="" className="text-muted-foreground">Select Business Type...</option>
-                              {BUSINESS_TYPES.map(bt => (
-                                <option key={bt} value={bt}>{bt}</option>
-                              ))}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-xs">▼</div>
+                              <span className="truncate">
+                                {form.businessType || 'Select Business Type…'}
+                              </span>
+                              <svg
+                                width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" strokeWidth={2.2}
+                                className={`shrink-0 text-muted-foreground transition-transform duration-200 ${typeOpen ? 'rotate-180' : ''}`}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {typeOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setTypeOpen(false)} />
+                                <ul
+                                  role="listbox"
+                                  className="absolute left-0 right-0 top-full mt-1 z-20 bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-scale-in max-h-60 overflow-y-auto overscroll-contain"
+                                >
+                                  {BUSINESS_TYPES.map(bt => {
+                                    const active = form.businessType === bt
+                                    return (
+                                      <li key={bt}>
+                                        <button
+                                          type="button"
+                                          role="option"
+                                          aria-selected={active}
+                                          onClick={() => { f('businessType', bt); setTypeOpen(false) }}
+                                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center justify-between gap-2 transition-colors ${
+                                            active
+                                              ? 'bg-primary/10 text-primary'
+                                              : 'text-foreground hover:bg-secondary'
+                                          }`}
+                                        >
+                                          <span>{bt}</span>
+                                          {active && (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                          )}
+                                        </button>
+                                      </li>
+                                    )
+                                  })}
+                                </ul>
+                              </>
+                            )}
                           </div>
 
                         </div>
                       )}
 
-                      {/* Agree Switch Toggle */}
-                      <label className="flex items-start gap-2.5 cursor-pointer group pt-1 min-h-10">
-                        <div className="relative mt-0.5">
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={form.terms}
-                            onChange={e => f('terms', e.target.checked)}
-                          />
-                          {/* Track */}
-                          <div className={`w-9 h-5 rounded-full transition-colors duration-200 ${form.terms ? 'bg-primary' : 'bg-slate-300'}`} />
-                          {/* Knob */}
-                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-200 ${form.terms ? 'transform translate-x-4' : ''}`} />
-                        </div>
-                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground leading-snug transition-colors">
-                          I agree to Eng-Mart's{' '}
-                          <a href="/terms" className="text-primary hover:underline font-bold">Terms</a> and{' '}
-                          <a href="/terms" className="text-primary hover:underline font-bold">Privacy Policy</a>
-                        </span>
-                      </label>
-
                       {/* Action buttons */}
                       <div className="grid grid-cols-2 gap-4 pt-2">
                         <button
                           type="submit"
-                          disabled={loading || !form.terms}
+                          disabled={loading || !form.company.trim() || !form.businessType}
                           className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
                         >
                           {loading ? 'Creating...' : 'Create Account'}

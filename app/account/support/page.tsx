@@ -35,16 +35,20 @@ export default function SupportInquiriesPage() {
       return
     }
     setFormError('')
-
     setIsSubmitting(true)
-    setTimeout(() => {
-      addInquiry(subject, message)
-      setIsSubmitting(false)
-      setSubject('')
-      setMessage('')
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
-    }, 1000)
+    // Real API call now — it emails the sales inbox. The fake setTimeout that
+    // used to sit here only pretended to submit.
+    addInquiry(subject, message)
+      .then(() => {
+        setSubject('')
+        setMessage('')
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 4000)
+      })
+      .catch((err: any) => {
+        setFormError(err?.message || 'Could not send your inquiry. Please try again.')
+      })
+      .finally(() => setIsSubmitting(false))
   }
 
   return (

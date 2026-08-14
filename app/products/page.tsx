@@ -48,7 +48,7 @@ function FilterSidebar({
       {/* Categories */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Categories</p>
-        <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-60 overflow-y-auto overscroll-contain pr-1">
           <button
             onClick={() => onSelectCategory('')}
             className={`flex items-center justify-between w-full text-left px-2 py-2 lg:py-1 min-h-10 lg:min-h-0 rounded text-xs font-semibold cursor-pointer transition-colors ${
@@ -75,7 +75,7 @@ function FilterSidebar({
       {/* Brands */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Brands</p>
-        <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-60 overflow-y-auto overscroll-contain pr-1">
           <button
             onClick={() => onSelectBrand('')}
             className={`flex items-center justify-between w-full text-left px-2 py-2 lg:py-1 min-h-10 lg:min-h-0 rounded text-xs font-semibold cursor-pointer transition-colors ${
@@ -424,7 +424,7 @@ export default function ProductsPage() {
           
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-[260px] shrink-0">
-            <div className="sticky top-32 p-5 bg-card rounded-lg border border-border shadow-sm">
+            <div className="sticky top-32 max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain p-5 bg-card rounded-lg border border-border shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-base font-bold text-foreground">Filters</h2>
                 {(selectedBrand || selectedCategory || activeSearch) && (

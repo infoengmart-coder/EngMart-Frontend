@@ -4,11 +4,14 @@ import './globals.css'
 import { SmoothScroll } from '@/lib/smooth-scroll'
 import { MotionProvider } from '@/lib/motion-provider'
 import { CartProvider } from '@/lib/cart'
+import { AuthGateProvider } from '@/lib/auth-gate'
 import { ThemeProvider } from '@/lib/theme'
 import { AuthProvider } from '@/lib/auth'
 import { AccountProvider } from '@/lib/account-context'
 import { SiteSettingsProvider } from '@/lib/site-settings'
-import { FloatingWhatsApp } from '@/components/floating-whatsapp'
+import { OptionalClerkProvider } from '@/lib/clerk-provider'
+import { SiteChrome } from '@/components/site-chrome'
+import { SiteStructuredData } from '@/components/structured-data'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -97,25 +100,32 @@ export default function RootLayout({
             transform: translateX(0);
           }
         `}</style>
+        <SiteStructuredData />
       </head>
       {/* text-foreground (not a hardcoded slate) or the token system is dead on arrival */}
       <body className="font-sans antialiased bg-background text-foreground">
+        {/* Outermost so the Google button can reach Clerk from any page.
+            Renders nothing extra when Clerk is not configured. */}
+        <OptionalClerkProvider>
         <ThemeProvider>
           <SiteSettingsProvider>
             <AuthProvider>
               <CartProvider>
                 <AccountProvider>
+                  <AuthGateProvider>
                   <MotionProvider>
                     <SmoothScroll>
                       {children}
                     </SmoothScroll>
                   </MotionProvider>
+                  </AuthGateProvider>
                 </AccountProvider>
               </CartProvider>
             </AuthProvider>
-            <FloatingWhatsApp />
+            <SiteChrome />
           </SiteSettingsProvider>
         </ThemeProvider>
+        </OptionalClerkProvider>
 
       </body>
     </html>
