@@ -86,21 +86,56 @@ function SsoCallbackInner() {
     // The attempt is being handled now; don't let a stale flag make a later
     // direct visit look like a real callback.
     try { sessionStorage.removeItem('engmart_sso_pending') } catch {}
+    let token: string | null = null
     try {
-      const token = await getToken()
-      if (!token) {
-        setError('Google sign-in did not complete. Please try again.')
+      token = await getToken()
+    } catch (err) {
+      // Distinct from a network failure, and it used to be reported as one.
+      console.error('[sso] could not read the Clerk session token:', err)
+      setError('Google sign-in did not complete. Please try again.')
+      await signOut().catch(() => {})
+      return
+    }
+    if (!token) {
+      setError('Google sign-in did not complete. Please try again.')
+      await signOut().catch(() => {})
+      return
+    }
+
+    try {
+      // One retry on a network-level failure. The backend may simply have been
+      // restarting; a customer who has already been through Google should not
+      // be sent back to the start because of a single dropped request.
+      let res: Response | null = null
+      let lastErr: unknown = null
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          res = await fetch(`${API_BASE}/auth/clerk/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          })
+          break
+        } catch (err) {
+          lastErr = err
+          console.error(`[sso] POST ${API_BASE}/auth/clerk/ failed (attempt ${attempt}):`, err)
+          if (attempt === 1) await new Promise(r => setTimeout(r, 1500))
+        }
+      }
+
+      if (!res) {
+        // Genuinely unreachable — name the address so the cause is obvious
+        // rather than blaming the customer's connection.
+        console.error('[sso] backend unreachable at', API_BASE, lastErr)
+        setError(`Could not reach the server at ${API_BASE}. It may be starting up — please try again in a moment.`)
+        await signOut().catch(() => {})
         return
       }
 
-      const res = await fetch(`${API_BASE}/auth/clerk/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      })
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
+        console.error('[sso] backend rejected the sign-in:', res.status, data)
         setError(data?.detail || 'Google sign-in failed. Please try again.')
         // Leave no half-signed-in Clerk session behind on failure.
         await signOut().catch(() => {})
@@ -131,8 +166,12 @@ function SsoCallbackInner() {
       // (empty) session and the navbar would keep showing "Login" until the
       // customer manually refreshed. A hard load re-reads the tokens above.
       window.location.replace(safeNext)
-    } catch {
-      setError('Could not reach the server. Please check your connection.')
+    } catch (err) {
+      // Anything left is a genuine bug, not a connection problem — say so and
+      // leave the real cause in the console rather than guessing at it.
+      console.error('[sso] unexpected failure while completing sign-in:', err)
+      setError('Something went wrong finishing your sign-in. Please try again.')
+      await signOut().catch(() => {})
     }
   }, [getToken, signOut, nextUrl])
 
