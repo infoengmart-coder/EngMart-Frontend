@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Product image coming soon">
+  <rect width="400" height="400" fill="#F1F5F9"/>
+  <g transform="translate(200 178)" stroke="#CBD5E1" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- circuit-breaker glyph: rounded module with a switch lever -->
+    <rect x="-52" y="-64" width="104" height="128" rx="14"/>
+    <line x1="-20" y1="-38" x2="20" y2="-38"/>
+    <line x1="0" y1="-12" x2="0" y2="34" stroke="#94A3B8" stroke-width="12"/>
+    <circle cx="0" cy="44" r="7" fill="#94A3B8" stroke="none"/>
+  </g>
+  <text x="200" y="330" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="17" font-weight="600" fill="#94A3B8">Image coming soon</text>
+</svg>
