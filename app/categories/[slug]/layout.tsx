@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
+import { BreadcrumbStructuredData } from '@/components/structured-data'
+import {
+  CATEGORY_KEYWORDS, SITE_NAME, clampDescription, freshnessStamp, pageMetadata,
+} from '@/lib/seo'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://eng-mart.com').replace(/\/$/, '')
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 type Props = {
@@ -21,25 +24,58 @@ async function getCategory(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const category = await getCategory(slug)
+  const path = `/categories/${slug}`
 
   if (!category) {
-    return { title: 'Category', description: 'Industrial electrical categories at Eng-Mart.' }
+    return pageMetadata({
+      title: 'Category Not Found',
+      description: `Browse the full ${SITE_NAME} catalogue of industrial electrical products.`,
+      path,
+      noindex: true,
+    })
   }
 
-  const title = `${category.name} — Price in Pakistan`
-  const description =
-    category.description ||
-    `Browse ${category.name} from ABB, CHINT, Himel, FICO and more. Genuine industrial electrical products supplied across Pakistan by Eng-Mart, Karachi.`
-  const url = `${SITE_URL}/categories/${slug}`
+  const count = category.product_count ?? 0
 
-  return {
+  // Mirrors the shape that ranks for these queries today:
+  // "MCCBs Price in Pakistan Updated July 2026".
+  const title = `${category.name} Price in Pakistan — Updated ${freshnessStamp()}`
+
+  const description = clampDescription(
+    `${count > 0 ? `${count.toLocaleString('en-PK')} ` : ''}${category.name} in stock at trade prices. `
+    + `${category.description || 'Genuine products from ABB, Siemens, Schneider, CHINT, Himel and Hyundai.'} `
+    + 'Karachi-based supplier, delivery across Pakistan.',
+  )
+
+  return pageMetadata({
     title,
     description,
-    alternates: { canonical: url },
-    openGraph: { type: 'website', url, title, description, siteName: 'Eng-Mart' },
-  }
+    path,
+    keywords: [
+      `${category.name} price in Pakistan`,
+      `${category.name} Karachi`,
+      `${category.name} price list`,
+      ...(CATEGORY_KEYWORDS[slug] || []),
+    ],
+  })
 }
 
-export default function CategoryLayout({ children }: Props) {
-  return <>{children}</>
+export default async function CategoryLayout({ children, params }: Props) {
+  const { slug } = await params
+  const category = await getCategory(slug)
+
+  return (
+    <>
+      {category && (
+        <BreadcrumbStructuredData
+          items={[
+            { name: 'Home', url: '/' },
+            { name: 'Categories', url: '/categories' },
+            { name: category.name, url: `/categories/${slug}` },
+          ]}
+        />
+      )}
+      {children}
+    </>
+  )
 }

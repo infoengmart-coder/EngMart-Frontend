@@ -14,6 +14,9 @@ import { WelcomeDiscountProvider } from '@/lib/welcome-discount'
 import { WelcomeDiscountModal } from '@/components/welcome-discount-modal'
 import { SiteChrome } from '@/components/site-chrome'
 import { SiteStructuredData } from '@/components/structured-data'
+import {
+  SITE_URL, SITE_NAME, SITE_LEGAL_NAME, OG_IMAGE, CORE_KEYWORDS, clampDescription,
+} from '@/lib/seo'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -22,39 +25,70 @@ const inter = Inter({
   weight: ['300', '400', '500', '600', '700', '800'],
 })
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://eng-mart.com').replace(/\/$/, '')
-
 export const metadata: Metadata = {
   // Makes every relative OG/canonical URL across the app resolve correctly.
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Eng-Mart | Premium Industrial Electrical Products — Karachi, Pakistan',
+    // Leads with the price intent this market actually searches on, not with
+    // the shop name — see the research note in lib/seo.ts.
+    default: 'Industrial Electrical Products Price in Pakistan — MCB, MCCB, ACB, Contactors | Eng-Mart',
     template: '%s | Eng-Mart',
   },
-  description:
-    "Eng-Mart is Pakistan's premier supplier of premium industrial electrical products — MCBs, MCCBs, Contactors, Current Transformers, Panel Meters from ABB, CHINT, Himel, FICO, PCE, Tense, Kondas & Opas.",
+  description: clampDescription(
+    'Buy industrial electrical products in Pakistan at trade prices. 4,700+ MCBs, '
+    + 'MCCBs, ACBs, contactors, current transformers and panel meters from ABB, '
+    + 'Siemens, Schneider, CHINT, Himel and Hyundai. Karachi-based, nationwide delivery.',
+  ),
   keywords: [
-    'industrial electrical products Pakistan',
-    'MCB price Pakistan',
-    'MCCB Karachi',
-    'ABB contactor Pakistan',
-    'CHINT MCB Karachi',
-    'Himel MCCB Pakistan',
-    'current transformer Pakistan',
-    'panel meter Karachi',
-    'switchgear supplier Karachi',
+    ...CORE_KEYWORDS,
+    'MCB price in Pakistan',
+    'MCCB price in Pakistan',
+    'ACB price Pakistan',
+    'magnetic contactor price Pakistan',
+    'current transformer price Pakistan',
+    'digital panel meter price Karachi',
+    'ABB Pakistan distributor',
+    'Siemens switchgear Pakistan',
+    'Schneider Electric Pakistan price',
+    'CHINT Pakistan price list',
+    'electrical shop Karachi',
   ],
-  authors: [{ name: 'Eng-Mart' }],
-  creator: 'Eng-Mart',
-  publisher: 'Eng-Mart',
-  robots: { index: true, follow: true },
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_LEGAL_NAME }],
+  creator: SITE_LEGAL_NAME,
+  publisher: SITE_LEGAL_NAME,
+  category: 'Industrial Electrical Equipment',
+  alternates: { canonical: SITE_URL },
+  formatDetection: { telephone: true, address: false, email: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      // Lets Google use full-size image previews and untruncated snippets,
+      // which materially improves click-through on product results.
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   openGraph: {
     type: 'website',
     locale: 'en_PK',
-    url: 'https://eng-mart.com',
-    siteName: 'Eng-Mart',
-    title: 'Eng-Mart | Premium Industrial Electrical Products',
-    description: "Pakistan's premier supplier of industrial electrical equipment.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: 'Industrial Electrical Products Price in Pakistan — MCB, MCCB, ACB, Contactors',
+    description:
+      '4,700+ industrial electrical products at trade prices from 60+ global brands. '
+      + 'Karachi-based, delivery across Pakistan.',
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'Eng-Mart — industrial electrical products and switchgear' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Industrial Electrical Products Price in Pakistan | Eng-Mart',
+    description: '4,700+ MCBs, MCCBs, ACBs and contactors from 60+ global brands. Karachi, Pakistan.',
+    images: [OG_IMAGE],
   },
 }
 

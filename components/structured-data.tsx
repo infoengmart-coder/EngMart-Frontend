@@ -5,8 +5,9 @@
  *
  *  • Organization  — lets Google associate the brand, logo and contact details,
  *    which is what produces the knowledge panel for "Eng-Mart".
- *  • LocalBusiness — this is a Karachi shop with a real address and hours, and
- *    it is what gets it into local / "near me" results and Maps.
+ *  • LocalBusiness — city, hours and phone, which is what gets the shop into
+ *    local / "near me" results. Deliberately NO street address: the client
+ *    asked that none be published anywhere on the site.
  *  • WebSite + SearchAction — enables the sitelinks search box, so someone can
  *    search the catalogue straight from the Google result.
  *
@@ -15,50 +16,83 @@
  */
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://eng-mart.com').replace(/\/$/, '')
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
-const ORGANIZATION = {
-  '@type': 'Organization',
-  '@id': `${SITE_URL}/#organization`,
-  name: 'Eng-Mart',
-  alternateName: 'Engineering Mart',
-  url: SITE_URL,
-  logo: { '@type': 'ImageObject', url: `${SITE_URL}/header_logo.png` },
-  description:
-    "Pakistan's supplier of industrial electrical products — MCBs, MCCBs, ACBs, "
-    + 'contactors, current transformers and panel meters from ABB, CHINT, Himel, '
-    + 'Schneider, Siemens, Hyundai and LS Electric.',
-  contactPoint: {
-    '@type': 'ContactPoint',
-    telephone: '+92-21-32763951',
-    contactType: 'sales',
-    areaServed: 'PK',
-    availableLanguage: ['en', 'ur'],
-  },
+/**
+ * Contact details, read from the same SiteSettings row the storefront renders.
+ *
+ * These used to be hardcoded here and had already drifted from the number the
+ * admin actually configured — which is worse than useless in structured data,
+ * because Google may surface a phone number that nobody answers.
+ */
+async function getContact() {
+  const fallback = { phone: '', email: '', hours: '' }
+  try {
+    const res = await fetch(`${API_BASE}/settings/`, { next: { revalidate: 3600 } })
+    if (!res.ok) return fallback
+    const d = await res.json()
+    return { phone: d.phone || '', email: d.email || '', hours: d.hours || '' }
+  } catch {
+    return fallback
+  }
 }
 
-const LOCAL_BUSINESS = {
-  '@type': ['Store', 'ElectricalContractor'],
-  '@id': `${SITE_URL}/#store`,
-  name: 'Eng-Mart',
-  image: `${SITE_URL}/header_logo.png`,
-  url: SITE_URL,
-  telephone: '+92-21-32763951',
-  email: 'info@eng-mart.com',
-  priceRange: 'PKR',
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: 'Shop No. 5, Pak Chamber, Sarafa Bazar',
-    addressLocality: 'Karachi',
-    addressRegion: 'Sindh',
-    addressCountry: 'PK',
-  },
-  openingHoursSpecification: [{
-    '@type': 'OpeningHoursSpecification',
-    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-    opens: '09:00',
-    closes: '19:00',
-  }],
-  areaServed: { '@type': 'Country', name: 'Pakistan' },
+function organization(contact: { phone: string; email: string }) {
+  return {
+    '@type': 'Organization',
+    '@id': `${SITE_URL}/#organization`,
+    name: 'Eng-Mart',
+    alternateName: 'Engineering Mart',
+    url: SITE_URL,
+    logo: { '@type': 'ImageObject', url: `${SITE_URL}/header_logo.png` },
+    image: `${SITE_URL}/og-image.png`,
+    description:
+      "Pakistan's supplier of industrial electrical products — MCBs, MCCBs, ACBs, "
+      + 'contactors, current transformers and panel meters from ABB, CHINT, Himel, '
+      + 'Schneider, Siemens, Hyundai and LS Electric.',
+    ...(contact.phone || contact.email
+      ? {
+          contactPoint: {
+            '@type': 'ContactPoint',
+            ...(contact.phone ? { telephone: contact.phone } : {}),
+            ...(contact.email ? { email: contact.email } : {}),
+            contactType: 'sales',
+            areaServed: 'PK',
+            availableLanguage: ['en', 'ur'],
+          },
+        }
+      : {}),
+  }
+}
+
+function localBusiness(contact: { phone: string; email: string }) {
+  return {
+    '@type': ['Store', 'ElectricalContractor'],
+    '@id': `${SITE_URL}/#store`,
+    name: 'Eng-Mart',
+    image: `${SITE_URL}/og-image.png`,
+    url: SITE_URL,
+    ...(contact.phone ? { telephone: contact.phone } : {}),
+    ...(contact.email ? { email: contact.email } : {}),
+    priceRange: 'PKR',
+    // City and region only. The client asked that no street address appear
+    // anywhere on the site, and JSON-LD is published data like any other —
+    // Google will render it into a local result. Locality is enough to stay
+    // relevant for "electrical supplier Karachi" without publishing the shop.
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Karachi',
+      addressRegion: 'Sindh',
+      addressCountry: 'PK',
+    },
+    openingHoursSpecification: [{
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      opens: '09:00',
+      closes: '19:00',
+    }],
+    areaServed: { '@type': 'Country', name: 'Pakistan' },
+  }
 }
 
 const WEBSITE = {
@@ -71,16 +105,19 @@ const WEBSITE = {
     '@type': 'SearchAction',
     target: {
       '@type': 'EntryPoint',
-      urlTemplate: `${SITE_URL}/products?search={search_term_string}`,
+      // `q` is the parameter /products reads. It was `search`, which the page
+      // ignores, so the sitelinks search box led to an unfiltered catalogue.
+      urlTemplate: `${SITE_URL}/products?q={search_term_string}`,
     },
     'query-input': 'required name=search_term_string',
   },
 }
 
-export function SiteStructuredData() {
+export async function SiteStructuredData() {
+  const contact = await getContact()
   const graph = {
     '@context': 'https://schema.org',
-    '@graph': [ORGANIZATION, LOCAL_BUSINESS, WEBSITE],
+    '@graph': [organization(contact), localBusiness(contact), WEBSITE],
   }
   return (
     <script

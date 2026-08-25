@@ -1,20 +1,12 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://eng-mart.com').replace(/\/$/, '')
-
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Terms & Conditions',
   description:
-    'Terms and conditions for purchasing industrial electrical products from Eng-Mart — pricing, payment by bank transfer, delivery within Pakistan, returns and warranty.',
-  alternates: { canonical: `${SITE_URL}/terms` },
-  openGraph: {
-    type: 'website',
-    url: `${SITE_URL}/terms`,
-    title: 'Terms & Conditions | Eng-Mart',
-    description: 'Terms governing orders and quotations from Eng-Mart, Karachi.',
-    siteName: 'Eng-Mart',
-  },
-}
+    'Terms and conditions for purchasing industrial electrical products from Eng-Mart — '
+    + 'pricing, payment, delivery within Pakistan, returns and manufacturer warranty.',
+  path: '/terms',
+})
 
 export default function TermsLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
