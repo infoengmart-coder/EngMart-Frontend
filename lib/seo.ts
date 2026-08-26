@@ -51,6 +51,22 @@ if (
   )
 }
 
+/**
+ * Site-wide "keep this out of Google" switch.
+ *
+ * Set NEXT_PUBLIC_NOINDEX=true while the storefront is deployed but the API
+ * behind it is not. A frontend with no backend renders an empty catalogue, and
+ * letting Google crawl that is actively harmful: it indexes thin pages, and
+ * re-crawling to discover the real 4,700 products takes far longer than simply
+ * not being indexed in the first place.
+ *
+ * Flip it to false (or delete it) once the API is live, then redeploy —
+ * NEXT_PUBLIC_* values are baked in at build time, so a dashboard change alone
+ * does nothing.
+ */
+export const NOINDEX_SITE =
+  (process.env.NEXT_PUBLIC_NOINDEX || '').toLowerCase() === 'true'
+
 export const SITE_NAME = 'Eng-Mart'
 export const SITE_LEGAL_NAME = 'Engineering Mart'
 export const OG_IMAGE = '/og-image.png'
@@ -154,6 +170,8 @@ export function pageMetadata({
   const url = absoluteUrl(path)
   const desc = clampDescription(description)
   const ogImage = image || OG_IMAGE
+  // The site-wide switch wins over any per-page setting.
+  const blocked = noindex || NOINDEX_SITE
 
   return {
     title: childTitleTemplate
@@ -162,7 +180,7 @@ export function pageMetadata({
     description: desc,
     ...(keywords?.length ? { keywords } : {}),
     alternates: { canonical: url },
-    robots: noindex
+    robots: blocked
       ? { index: false, follow: false, nocache: true,
           googleBot: { index: false, follow: false } }
       : { index: true, follow: true,

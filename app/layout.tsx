@@ -16,6 +16,7 @@ import { SiteChrome } from '@/components/site-chrome'
 import { SiteStructuredData } from '@/components/structured-data'
 import {
   SITE_URL, SITE_NAME, SITE_LEGAL_NAME, OG_IMAGE, CORE_KEYWORDS, clampDescription,
+  NOINDEX_SITE,
 } from '@/lib/seo'
 
 const inter = Inter({
@@ -60,19 +61,24 @@ export const metadata: Metadata = {
   category: 'Industrial Electrical Equipment',
   alternates: { canonical: SITE_URL },
   formatDetection: { telephone: true, address: false, email: true },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      // Lets Google use full-size image previews and untruncated snippets,
-      // which materially improves click-through on product results.
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-      'max-video-preview': -1,
-    },
-  },
+  // NEXT_PUBLIC_NOINDEX=true blocks the whole site — used while the storefront
+  // is live but its API is not, so Google never sees an empty catalogue.
+  robots: NOINDEX_SITE
+    ? { index: false, follow: false, nocache: true,
+        googleBot: { index: false, follow: false } }
+    : {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          // Lets Google use full-size image previews and untruncated snippets,
+          // which materially improves click-through on product results.
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+          'max-video-preview': -1,
+        },
+      },
   openGraph: {
     type: 'website',
     locale: 'en_PK',
