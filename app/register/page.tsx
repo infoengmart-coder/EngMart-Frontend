@@ -69,30 +69,35 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     const nameParts = form.fullName.trim().split(' ')
+    const email = form.email.trim().toLowerCase()
+
+    // This no longer creates the account. It validates everything and emails a
+    // 6-digit code; /verify-email is where the account is actually created.
+    // Phone and company travel with the request so they survive the round trip
+    // — the customer must not have to retype them after verifying.
     const result = await register({
-      username: form.email.split('@')[0] + Math.floor(Math.random() * 100),
-      email: form.email,
+      username: email.split('@')[0] + Math.floor(Math.random() * 100),
+      email,
       password: form.password,
       password_confirm: form.confirm,
       first_name: nameParts[0] || '',
       last_name: nameParts.slice(1).join(' ') || '',
+      phone: form.phone,
+      company: form.company,
+      business_type: form.businessType,
     })
     setLoading(false)
+
     if (result.ok) {
-      try {
-        localStorage.setItem('engmart_reg_phone', form.phone)
-        localStorage.setItem('engmart_reg_company', form.company)
-        if (form.email) {
-          localStorage.setItem(`engmart_extra_${form.email.toLowerCase().trim()}`, JSON.stringify({
-            phone: form.phone,
-            company: form.company,
-          }))
-        }
-      } catch {}
       setSuccess(true)
-      setTimeout(() => router.push('/login'), 2000)
+      // The email is passed in the URL, not in state, so a refresh on the
+      // verification screen does not lose it.
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } else {
-      setError(result.error || 'Registration failed')
+      // Errors are almost always about the personal fields (email taken,
+      // password too weak), so put the customer back where they can fix it.
+      setStep('personal')
+      setError(result.error || 'Could not start sign-up')
     }
   }
 
@@ -128,7 +133,7 @@ export default function RegisterPage() {
           {/* Logo on top left */}
           <div className="self-start">
             <Link href="/">
-              <Image src="/header_logo.png" alt="Eng-Mart" width={130} height={36} className="h-8 w-auto" />
+              <Image src="/header_logo.png" alt="Eng-Mart" width={260} height={87} priority className="h-12 sm:h-14 w-auto" />
             </Link>
           </div>
 
@@ -168,11 +173,18 @@ export default function RegisterPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-10"
               >
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-3xl mx-auto mb-5 border border-emerald-500/20 shadow-sm">✓</div>
-                <h2 className="text-xl font-bold text-foreground mb-1">Signed Up Successfully!</h2>
-                <p className="text-muted-foreground text-xs mb-1">Welcome to Eng-Mart, <strong>{form.fullName}</strong>.</p>
-                <p className="text-[10px] text-muted-foreground mb-6">Redirecting you to login page...</p>
-                <Link href="/login" className="btn-primary py-3 px-6 rounded-xl text-xs font-bold justify-center inline-flex">Go to Login →</Link>
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-3xl mx-auto mb-5 border border-primary/20 shadow-sm">✉️</div>
+                <h2 className="text-xl font-bold text-foreground mb-1">Check Your Email</h2>
+                <p className="text-muted-foreground text-xs mb-1">
+                  We've sent a 6-digit code to <strong>{form.email}</strong>.
+                </p>
+                <p className="text-[10px] text-muted-foreground mb-6">Taking you to the verification page…</p>
+                <Link
+                  href={`/verify-email?email=${encodeURIComponent(form.email.trim().toLowerCase())}`}
+                  className="btn-primary py-3 px-6 rounded-xl text-xs font-bold justify-center inline-flex"
+                >
+                  Enter Code →
+                </Link>
               </motion.div>
             ) : (
               <>
@@ -183,9 +195,14 @@ export default function RegisterPage() {
                   </h2>
                 </div>
 
-                {/* Step Tab bar */}
+                {/* Step Tab bar.
+
+                    With "I don't have a business" switched on there IS no
+                    second step, so the tab disappears rather than sitting there
+                    inviting a click that leads to a form the customer has just
+                    said does not apply to them. */}
                 <div className="flex gap-1 mb-4 p-1 bg-secondary rounded-xl border border-border/20">
-                  {(['personal', 'business'] as const).map(tab => (
+                  {(noBusiness ? (['personal'] as const) : (['personal', 'business'] as const)).map(tab => (
                     <button
                       key={tab}
                       type="button"
@@ -305,7 +322,14 @@ export default function RegisterPage() {
                             type="checkbox"
                             className="sr-only"
                             checked={noBusiness}
-                            onChange={e => setNoBusiness(e.target.checked)}
+                            onChange={e => {
+                              setNoBusiness(e.target.checked)
+                              // The business step no longer exists once this is
+                              // on, so leaving it as the current step would
+                              // strand the customer on a hidden tab.
+                              if (e.target.checked) setStep('personal')
+                              setError('')
+                            }}
                           />
                           <div className={`w-9 h-5 rounded-full transition-colors duration-200 ${noBusiness ? 'bg-primary' : 'bg-slate-300'}`} />
                           <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-200 ${noBusiness ? 'transform translate-x-4' : ''}`} />
@@ -335,10 +359,19 @@ export default function RegisterPage() {
                         </span>
                       </label>
 
-                      {/* Action buttons */}
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        {/* Hidden until the form is actually completable, so the
-                            customer is never invited to press a dead button. */}
+                      {/* Action button.
+
+                          ONE button, full width. There used to be a "Sign In"
+                          button sitting next to it at equal weight, and
+                          customers filling in the sign-up form pressed it —
+                          landing on the login page with no account and
+                          reporting that "sign up doesn't work". Signing in is
+                          now a quiet text link below, where it belongs on a
+                          registration page.
+
+                          The button is also hidden until the form is actually
+                          completable, so it is never a dead click. */}
+                      <div className="pt-2">
                         {personalReady ? (
                           noBusiness ? (
                             <button
@@ -346,28 +379,42 @@ export default function RegisterPage() {
                               disabled={loading}
                               className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center disabled:opacity-50 shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
                             >
-                              {loading ? 'Creating...' : 'Create Account'}
+                              {loading ? 'Sending code…' : 'Create Account'}
                             </button>
                           ) : (
                             <button
                               type="button"
-                              onClick={() => setStep('business')}
+                              onClick={() => { setError(''); setStep('business') }}
                               className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
                             >
-                              Next Info
+                              Continue to Business Details →
                             </button>
                           )
                         ) : (
-                          <p className="col-span-1 self-center text-[11px] font-semibold text-muted-foreground leading-snug">
-                            Complete the fields above and accept the terms to continue.
+                          <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-3">
+                            <p className="text-[11px] font-semibold text-muted-foreground leading-snug">
+                              Fill in every field above and accept the Terms — the
+                              {noBusiness ? ' “Create Account” ' : ' “Continue” '}
+                              button appears as soon as you do.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Tells the customer what pressing it will do, before
+                            they press it — the second step used to arrive with
+                            no warning. */}
+                        {personalReady && !noBusiness && (
+                          <p className="text-[11px] text-muted-foreground font-semibold text-center mt-2.5 leading-snug">
+                            One more step: your company details. No business?
+                            Switch on “I don't have a business” above.
                           </p>
                         )}
-                        <Link
-                          href="/login"
-                          className="btn-secondary py-3.5 rounded-xl text-xs font-bold w-full justify-center text-center bg-card border border-border text-foreground hover:bg-background hover:border-slate-300 transition-[background-color,border-color,transform] shadow-[0_2px_4px_rgba(0,0,0,0.02)] active:scale-[0.99]"
-                        >
-                          Sign In
-                        </Link>
+                        {personalReady && noBusiness && (
+                          <p className="text-[11px] text-muted-foreground font-semibold text-center mt-2.5 leading-snug">
+                            We'll email a 6-digit code to <strong className="text-foreground">{form.email}</strong> to
+                            confirm it's yours.
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   ) : (
@@ -377,18 +424,61 @@ export default function RegisterPage() {
                       animate={{ opacity: 1, x: 0 }}
                       className="space-y-4"
                     >
+                      {/* Back arrow, at the TOP where a back control is looked
+                          for. It returns to the personal step with everything
+                          still filled in, so a customer who reached this step by
+                          mistake can flip the "I don't have a business" toggle
+                          and finish — rather than feeling trapped in a form
+                          about a company they do not have. */}
+                      <button
+                        type="button"
+                        onClick={() => { setError(''); setStep('personal') }}
+                        className="inline-flex items-center gap-1.5 min-h-10 -ml-1 px-1 text-xs font-bold text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+                      >
+                        <svg
+                          width="16" height="16" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth={2.5}
+                          className="transition-transform group-hover:-translate-x-0.5"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to personal details
+                      </button>
+
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Tell us about your business so we can apply the right trade
                         pricing. Both fields are required.
                       </p>
 
+                      <div className="rounded-xl border border-border bg-secondary/40 px-3.5 py-2.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground leading-snug">
+                          Don't have a business? Go{' '}
+                          <button
+                            type="button"
+                            onClick={() => { setNoBusiness(true); setError(''); setStep('personal') }}
+                            className="text-primary font-bold hover:underline cursor-pointer"
+                          >
+                            back and switch on “I don't have a business”
+                          </button>{' '}
+                          — you can create your account without this step.
+                        </p>
+                      </div>
+
                       {/* Business details are mandatory on this step: reaching it
-                          at all means the customer said they DO have a business. */}
+                          at all means the customer said they DO have a business.
+
+                          Company name and business type are two SEPARATE cards,
+                          not one card with `overflow-hidden`. That wrapper is
+                          what hid the business-type dropdown: the listbox opens
+                          as an absolutely-positioned child, and an
+                          overflow-hidden ancestor clips it away to nothing. The
+                          options were rendering the whole time -- they were just
+                          being cut off by the card they were inside. */}
                       {true && (
-                        <div className="bg-card border-2 border-border rounded-2xl overflow-hidden shadow-sm divide-y-2 divide-border focus-within:border-primary transition-colors">
+                        <div className="space-y-3">
                           
                           {/* Company Name */}
-                          <div className="flex items-center gap-3.5 px-4 py-3.5 bg-card">
+                          <div className="flex items-center gap-3.5 px-4 py-3.5 bg-card border-2 border-border rounded-2xl shadow-sm focus-within:border-primary transition-colors">
                             <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
@@ -401,8 +491,14 @@ export default function RegisterPage() {
                             />
                           </div>
 
-                          {/* Business Type Select */}
-                          <div className="flex items-center gap-3.5 px-4 py-3.5 bg-card relative">
+                          {/* Business Type Select.
+
+                              `relative` positions the listbox; nothing above it
+                              may clip, so this card deliberately has no
+                              `overflow-hidden`. */}
+                          <div className={`flex items-center gap-3.5 px-4 py-3.5 bg-card border-2 rounded-2xl shadow-sm transition-colors relative ${
+                            typeOpen ? 'border-primary z-30' : 'border-border focus-within:border-primary'
+                          }`}>
                             <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
@@ -432,10 +528,10 @@ export default function RegisterPage() {
 
                             {typeOpen && (
                               <>
-                                <div className="fixed inset-0 z-10" onClick={() => setTypeOpen(false)} />
+                                <div className="fixed inset-0 z-40" onClick={() => setTypeOpen(false)} />
                                 <ul
                                   role="listbox"
-                                  className="absolute left-0 right-0 top-full mt-1 z-20 bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-scale-in max-h-60 overflow-y-auto overscroll-contain"
+                                  className="absolute left-0 right-0 top-full mt-2 z-50 bg-card border-2 border-border rounded-xl shadow-2xl animate-scale-in max-h-60 overflow-y-auto overscroll-contain"
                                 >
                                   {BUSINESS_TYPES.map(bt => {
                                     const active = form.businessType === bt
@@ -470,28 +566,44 @@ export default function RegisterPage() {
                         </div>
                       )}
 
-                      {/* Action buttons */}
-                      <div className="grid grid-cols-2 gap-4 pt-2">
+                      {/* Action button. Full width and alone: "Create Account"
+                          is the only thing to do here, and the way back is the
+                          arrow at the top of this step. */}
+                      <div className="pt-2">
                         <button
                           type="submit"
                           disabled={loading || !form.company.trim() || !form.businessType}
                           className="btn-primary py-3.5 rounded-xl text-xs font-bold w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-[box-shadow,transform]"
                         >
-                          {loading ? 'Creating...' : 'Create Account'}
+                          {loading ? 'Sending code…' : 'Create Account'}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setStep('personal')}
-                          className="btn-secondary py-3.5 rounded-xl text-xs font-bold w-full justify-center bg-card border border-border text-foreground hover:bg-background hover:border-slate-300 transition-[background-color,border-color,transform] shadow-[0_2px_4px_rgba(0,0,0,0.02)] active:scale-[0.99]"
-                        >
-                          Back
-                        </button>
+                        {!form.company.trim() || !form.businessType ? (
+                          <p className="text-[11px] font-semibold text-muted-foreground text-center mt-2.5">
+                            {!form.company.trim()
+                              ? 'Enter your company name to continue.'
+                              : 'Choose your business type to continue.'}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] font-semibold text-muted-foreground text-center mt-2.5 leading-snug">
+                            We'll email a 6-digit code to <strong className="text-foreground">{form.email}</strong> to
+                            confirm it's yours.
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   )}
                 </form>
 
                 <GoogleSignIn dividerLabel="or sign up with" redirectTo="/account" />
+
+                {/* Signing in lives here, as a link — not as a button beside
+                    "Create Account", where it was being pressed by mistake. */}
+                <p className="text-center text-[11px] font-semibold text-muted-foreground pt-1">
+                  Already have an account?{' '}
+                  <Link href="/login" className="text-primary font-bold hover:underline">
+                    Sign in instead
+                  </Link>
+                </p>
               </>
             )}
           </div>

@@ -185,6 +185,15 @@ export default function BrandDetailPage({ params }: { params: Promise<{ slug: st
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/15">
                     via {brand?.supplier_name || '—'}
                   </span>
+                  {/* Brand-wide discount. The percentage arrives already zeroed
+                      when the campaign is paused, so this pill appears only
+                      while the offer is genuinely running. */}
+                  {Number(brand?.discount_percent) > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide text-white bg-gradient-to-r from-rose-600 to-red-500 border border-white/20 shadow-lg">
+                      {Number(brand?.discount_percent)}% OFF
+                      {brand?.discount_label ? ` · ${brand.discount_label}` : ' · all products'}
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-4xl sm:text-5xl font-black text-white">{brand?.name}</h1>
                 <p className="text-slate-400 text-sm sm:text-base mt-2">{details.tagline}</p>

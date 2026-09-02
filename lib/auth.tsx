@@ -27,7 +27,19 @@ type AuthTokens = {
 type AuthCtx = {
   user: UserProfile | null
   login: (username: string, password: string, remember?: boolean) => Promise<{ ok: boolean; error?: string; user?: UserProfile }>
+  /**
+   * Step 1 of sign-up: validate the details and email a 6-digit code.
+   * NO account is created here — see verifySignupCode.
+   */
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>
+  /** Step 2: exchange the emailed code for a real account, signed in. */
+  verifySignupCode: (
+    email: string, code: string, remember?: boolean,
+  ) => Promise<{ ok: boolean; error?: string; user?: UserProfile; locked?: boolean; expired?: boolean }>
+  /** Ask for a fresh code for a sign-up already awaiting verification. */
+  resendSignupCode: (
+    email: string,
+  ) => Promise<{ ok: boolean; error?: string; retryAfter?: number }>
   /** Persist name changes to the API (backend only allows first/last name). */
   updateUser: (data: { name?: string; first_name?: string; last_name?: string }) => Promise<{ ok: boolean; error?: string }>
   logout: () => void
@@ -44,6 +56,10 @@ type RegisterData = {
   password_confirm: string
   first_name?: string
   last_name?: string
+  /** Extra storefront profile fields, carried through verification. */
+  phone?: string
+  company?: string
+  business_type?: string
 }
 
 const AuthContext = createContext<AuthCtx | null>(null)
@@ -176,19 +192,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  /**
+   * Start sign-up: validate everything and email a verification code.
+   *
+   * This deliberately does NOT create an account. The old endpoint did, which
+   * meant any string containing an @ became a customer — the reason orders were
+   * landing on addresses nobody owned. The account is created by
+   * `verifySignupCode` once the code from that inbox comes back.
+   */
   const register = useCallback(async (regData: RegisterData) => {
     try {
-      const res = await fetch(`${API_BASE}/auth/register/`, {
+      const res = await fetch(`${API_BASE}/auth/register/request-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regData),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const firstErr = Object.values(data).flat()[0]
-        return { ok: false, error: (firstErr as string) || 'Registration failed' }
+        // DRF field errors arrive as { field: [msg] }; `detail` is a plain
+        // string. Prefer whichever is actually present so the customer sees
+        // "Password must be…" rather than a generic failure.
+        const firstErr = data.detail || Object.values(data).flat()[0]
+        return { ok: false, error: (firstErr as string) || 'Could not start sign-up' }
       }
-      // Don't auto-login — let the user sign in from the login page.
+      return { ok: true }
+    } catch (e: any) {
+      return { ok: false, error: e.message || 'Network error' }
+    }
+  }, [])
+
+  /**
+   * Finish sign-up with the emailed code.
+   *
+   * On success the account exists and the response carries JWTs, so the
+   * customer is signed straight in — asking them to re-type the password they
+   * entered two screens ago would be pure friction.
+   */
+  const verifySignupCode = useCallback(async (
+    email: string, code: string, remember: boolean = true,
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register/verify-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: data.detail || 'That code could not be verified.',
+          locked: !!data.locked,
+          expired: !!data.expired,
+        }
+      }
+      storeAuth({ access: data.access, refresh: data.refresh }, data.user, remember)
+      setUser(data.user)
+
+      // Phone/company were collected on the sign-up form but auth.User has no
+      // column for them; keep the same localStorage convention the rest of the
+      // account pages already read.
+      try {
+        const profile = data.profile || {}
+        if (profile.phone) localStorage.setItem('engmart_reg_phone', profile.phone)
+        if (profile.company) localStorage.setItem('engmart_reg_company', profile.company)
+        if (data.user?.email) {
+          localStorage.setItem(
+            `engmart_extra_${data.user.email.toLowerCase().trim()}`,
+            JSON.stringify({ phone: profile.phone || '', company: profile.company || '' }),
+          )
+        }
+      } catch {}
+
+      return { ok: true, user: data.user }
+    } catch (e: any) {
+      return { ok: false, error: e.message || 'Network error' }
+    }
+  }, [])
+
+  const resendSignupCode = useCallback(async (email: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register/resend-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: data.detail || 'Could not send a new code.',
+          retryAfter: Number(data.retry_after) || 0,
+        }
+      }
       return { ok: true }
     } catch (e: any) {
       return { ok: false, error: e.message || 'Network error' }
@@ -261,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.is_admin === true
 
   return (
-    <AuthContext.Provider value={{ user, login, register, updateUser, logout, isAuthenticated, isAdmin, isLoading, getAccessToken }}>
+    <AuthContext.Provider value={{ user, login, register, verifySignupCode, resendSignupCode, updateUser, logout, isAuthenticated, isAdmin, isLoading, getAccessToken }}>
       {children}
     </AuthContext.Provider>
   )

@@ -24,7 +24,12 @@ export type OrderItem = {
   category: string
   catNo: string
   quantity: number
+  /** Unit price BEFORE any brand discount. */
   price: number
+  /** Brand discount snapshotted on this line, as a percentage. */
+  discountPercent?: number
+  /** price x quantity, less the brand discount. */
+  lineTotal?: number
   image?: string
 }
 
@@ -38,6 +43,13 @@ export type Order = {
   discount?: number
   /** Which discount was applied, e.g. "WELCOME5". Blank when none. */
   discountCode?: string
+  /**
+   * Share of `discount` that came from brand-wide campaigns.
+   *
+   * `discount` is the grand total taken off, so this is a breakdown of it, not
+   * an extra deduction — never subtract both.
+   */
+  brandDiscount?: number
   /** GST rate this order was charged at, as a percentage. */
   gstPercent?: number
   /** Cash-on-delivery charge. Zero for every other payment method. */
@@ -224,7 +236,10 @@ function apiOrderToAccountOrder(o: OrderResponse): Order {
       category: '',
       catNo: i.cat_no || '',
       quantity: i.quantity,
+      // Pre-discount unit price; `discountPercent` says what came off it.
       price: Number(i.unit_price) || 0,
+      discountPercent: Number(i.discount_percent) || 0,
+      lineTotal: Number(i.line_total) || 0,
       image: i.product_image || undefined,
     })),
     // The stored total is now authoritative. It previously had a PKR 100 COD
@@ -237,6 +252,7 @@ function apiOrderToAccountOrder(o: OrderResponse): Order {
     // instead of silently folding it into the total.
     discount: Number(o.discount_amount) || 0,
     discountCode: o.promo_code_text || '',
+    brandDiscount: Number(o.brand_discount_amount) || 0,
     // GST + COD as charged, snapshotted on the order row.
     gstPercent: Number(o.gst_percent) || 0,
     codFee: Number(o.cod_fee) || 0,

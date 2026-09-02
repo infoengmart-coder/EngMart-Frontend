@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { useSiteSettings } from '@/lib/site-settings'
 import {
-  ChevronDown, Copyright, FileCheck, FileText, Gavel, Landmark, Lock,
+  ArrowUp, ChevronDown, Copyright, FileCheck, FileText, Gavel, Landmark, Lock,
   MessageCircleQuestion, Package, RotateCcw, Scale, ScrollText, ShieldAlert,
   Tag, Truck, UserCog, type LucideIcon,
 } from 'lucide-react'
@@ -16,6 +17,24 @@ const ICONS: Record<string, LucideIcon> = {
   Copyright, FileCheck, Gavel, Landmark, Lock, Package, RotateCcw, Scale,
   ShieldAlert, Tag, Truck, UserCog,
 }
+
+// Shown in the header. Update this whenever the wording below changes — a
+// legal page with no date gives the reader no way to tell what they agreed to.
+const LAST_UPDATED = 'September 2026'
+
+/**
+ * The four questions customers actually arrive with.
+ *
+ * Twelve numbered sections is correct for a legal document and useless for
+ * someone who just wants to know whether you deliver to Lahore. These jump
+ * straight to the relevant section.
+ */
+const SUMMARY = [
+  { icon: 'Truck', title: 'Delivery', note: 'Pakistan only', href: '#delivery' },
+  { icon: 'RotateCcw', title: 'Returns', note: 'Within 7 days', href: '#returns' },
+  { icon: 'Landmark', title: 'Payment', note: 'Bank transfer or COD', href: '#payment' },
+  { icon: 'Tag', title: 'Pricing', note: 'PKR, excl. tax', href: '#pricing' },
+]
 
 /**
  * Terms & Conditions.
@@ -160,27 +179,70 @@ export default function TermsPage() {
     },
   ]
 
+
   const icon = (name: string, className = 'w-5 h-5') => {
     const Ico = ICONS[name] || FileText
     return <Ico className={className} />
   }
 
+  /**
+   * Which section the reader is currently in, for the contents list.
+   *
+   * A twelve-item list with nothing highlighted gives no sense of place in a
+   * long document. IntersectionObserver is used rather than a scroll handler so
+   * this costs nothing on the main thread while scrolling.
+   */
+  const [activeId, setActiveId] = useState(SECTIONS[0]?.id || '')
+
+  useEffect(() => {
+    const headings = SECTIONS
+      .map((s) => document.getElementById(s.id))
+      .filter((el): el is HTMLElement => el !== null)
+    if (!headings.length) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Several sections can be on screen at once, so take the highest one
+        // that is intersecting rather than the most recent callback.
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveId(visible[0].target.id)
+      },
+      // Top-weighted margin: a section counts as "current" once its heading
+      // reaches the upper third, which is where the eye actually is.
+      { rootMargin: '-88px 0px -65% 0px', threshold: 0 },
+    )
+
+    headings.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div className="min-h-screen bg-secondary/30 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero */}
-      <section className="bg-card border-b border-border pt-10 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ── Header ──
+          Deliberately quiet: this is a reference document, and a loud gradient
+          hero above it only competes with the text people came to read. */}
+      <section className="border-b border-border bg-card">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-9">
           <nav className="breadcrumb mb-5">
             <Link href="/">Home</Link>
             <span className="breadcrumb-separator">/</span>
             <span className="breadcrumb-current">Terms &amp; Conditions</span>
           </nav>
+
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <ScrollText className="w-3.5 h-3.5" /> Legal
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+                <ScrollText className="w-3.5 h-3.5" /> Legal
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                Last updated {LAST_UPDATED}
+              </span>
             </div>
+
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
               Terms &amp; Conditions
             </h1>
@@ -188,109 +250,166 @@ export default function TermsPage() {
               These terms govern your use of this website and any order placed with {SITE.name}.
               Please read them before placing an order or requesting a quotation.
             </p>
+
+            {/* The four points customers actually ask about, surfaced so nobody
+                has to read twelve sections to find them. */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mt-7">
+              {SUMMARY.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-xl border border-border bg-background p-3.5 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
+                >
+                  <div className="text-primary mb-2">{icon(item.icon, 'w-4 h-4')}</div>
+                  <p className="text-[11px] font-bold text-foreground leading-tight">{item.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{item.note}</p>
+                </a>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid md:grid-cols-[220px_1fr] gap-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid lg:grid-cols-[240px_1fr] gap-8 lg:gap-10">
 
-          {/* Contents */}
+          {/* ── Contents ── */}
           <aside>
-            {/* Mobile: collapsible TOC */}
-            <details className="md:hidden store-card group">
-              <summary className="flex items-center justify-between gap-2 p-4 min-h-[44px] cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                On this page
-                <ChevronDown className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" />
+            {/* Mobile: collapsible */}
+            <details className="lg:hidden rounded-xl border border-border bg-card overflow-hidden group">
+              <summary className="flex items-center justify-between gap-2 px-4 py-3.5 min-h-[44px] cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                  On this page
+                </span>
+                <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
               </summary>
-              <ul className="px-4 pb-3 space-y-0.5">
-                {SECTIONS.map((s) => (
+              <ul className="border-t border-border py-1">
+                {SECTIONS.map((s, i) => (
                   <li key={s.id}>
                     <a
                       href={`#${s.id}`}
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center min-h-[40px] leading-snug"
+                      className="flex items-center gap-3 px-4 min-h-[42px] text-xs text-muted-foreground hover:text-primary hover:bg-secondary/40 transition-colors leading-snug"
                     >
-                      {s.title}
+                      <span className="text-[10px] font-mono text-muted-foreground/60 w-4 shrink-0">{i + 1}</span>
+                      {s.title.replace(/^\d+\.\s*/, '')}
                     </a>
                   </li>
                 ))}
               </ul>
             </details>
-            {/* md+: always visible */}
-            <div className="hidden md:block sticky top-24 store-card p-4">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+
+            {/* Desktop: sticky, with the current section marked */}
+            <nav className="hidden lg:block sticky top-24">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 px-3">
                 On this page
               </p>
-              <ul className="space-y-1.5">
-                {SECTIONS.map((s) => (
-                  <li key={s.id}>
-                    <a
-                      href={`#${s.id}`}
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors block leading-snug"
-                    >
-                      {s.title}
-                    </a>
-                  </li>
-                ))}
+              <ul className="space-y-0.5 border-l border-border">
+                {SECTIONS.map((s, i) => {
+                  const active = activeId === s.id
+                  return (
+                    <li key={s.id}>
+                      <a
+                        href={`#${s.id}`}
+                        aria-current={active ? 'true' : undefined}
+                        className={`block pl-3 pr-2 py-1.5 text-xs leading-snug border-l-2 -ml-px transition-colors ${
+                          active
+                            ? 'border-primary text-primary font-semibold'
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-[10px] font-mono opacity-50 mr-1.5">{i + 1}</span>
+                        {s.title.replace(/^\d+\.\s*/, '')}
+                      </a>
+                    </li>
+                  )
+                })}
               </ul>
-            </div>
+            </nav>
           </aside>
 
-          {/* Sections */}
-          <div className="space-y-6">
-            {SECTIONS.map((s, i) => (
-              <motion.section
-                key={s.id}
-                id={s.id}
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.25, delay: Math.min(i * 0.02, 0.15) }}
-                className="store-card p-5 sm:p-6 scroll-mt-24"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center text-primary shrink-0">
-                    {icon(s.icon, 'w-4 h-4')}
+          {/* ── The document ──
+              ONE sheet, with hairline rules between sections — not twelve
+              separate cards. Stacking a dozen bordered, shadowed panels made
+              the page read as a pile of unrelated boxes rather than a single
+              continuous agreement, which is what it is. */}
+          <article className="min-w-0">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+              {SECTIONS.map((s, i) => (
+                <motion.section
+                  key={s.id}
+                  id={s.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.25 }}
+                  className={`scroll-mt-24 px-5 sm:px-8 py-7 ${i > 0 ? 'border-t border-border' : ''}`}
+                >
+                  <div className="flex items-start gap-3.5 mb-4">
+                    <div className="w-9 h-9 rounded-xl bg-primary/[0.08] text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      {icon(s.icon, 'w-4 h-4')}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">
+                        Section {i + 1}
+                      </p>
+                      <h2 className="text-[17px] font-bold text-foreground leading-snug">
+                        {s.title.replace(/^\d+\.\s*/, '')}
+                      </h2>
+                    </div>
                   </div>
-                  <h2 className="text-base font-bold text-foreground">{s.title}</h2>
-                </div>
-                <div className="space-y-2.5 pl-0 sm:pl-12">
-                  {s.body.map((p, pi) => (
-                    <p key={pi} className="text-sm text-muted-foreground leading-relaxed">{p}</p>
-                  ))}
-                </div>
-              </motion.section>
-            ))}
 
-            {/* Contact */}
-            <div className="store-card p-5 sm:p-6 bg-primary/5 border-primary/20">
-              <h2 className="text-base font-bold text-foreground mb-2 flex items-center gap-2">
-                <MessageCircleQuestion className="w-4 h-4 text-primary" />
-                Questions about these terms?
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Contact us and our team will be happy to clarify anything before you order.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/contact" className="btn-primary text-xs py-2 px-4">Contact Us</Link>
-                {SITE.email && (
-                  <a href={`mailto:${SITE.email}`} className="btn-secondary text-xs py-2 px-4">
-                    {SITE.email}
-                  </a>
-                )}
-                {SITE.phone && (
-                  <a href={`tel:${SITE.phone}`} className="btn-secondary text-xs py-2 px-4">
-                    {SITE.phone}
-                  </a>
-                )}
+                  {/* Indented to sit under the heading text, not the icon, so
+                      the paragraphs form one clean column down the page. */}
+                  <div className="space-y-3 sm:pl-[50px]">
+                    {s.body.map((para, pi) => (
+                      <p key={pi} className="text-sm text-muted-foreground leading-[1.75] max-w-[68ch]">
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+                </motion.section>
+              ))}
+
+              {/* Contact — inside the same sheet, so the document ends rather
+                  than trailing off into another floating box. */}
+              <div className="border-t border-border bg-secondary/30 px-5 sm:px-8 py-7">
+                <h2 className="text-[15px] font-bold text-foreground mb-1.5 flex items-center gap-2">
+                  <MessageCircleQuestion className="w-4 h-4 text-primary" />
+                  Questions about these terms?
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-[60ch]">
+                  Our team will gladly clarify anything before you order.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/contact" className="btn-primary text-xs py-2 px-4">Contact Us</Link>
+                  {SITE.email && (
+                    <a href={`mailto:${SITE.email}`} className="btn-secondary text-xs py-2 px-4">
+                      {SITE.email}
+                    </a>
+                  )}
+                  {SITE.phone && (
+                    <a href={`tel:${SITE.phone}`} className="btn-secondary text-xs py-2 px-4">
+                      {SITE.phone}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
-            <p className="text-[11px] text-muted-foreground text-center pt-2">
-              {SITE.address && <>Registered address: {SITE.address}<br /></>}
-              These terms apply to orders placed within Pakistan.
-            </p>
-          </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-5 px-1">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {SITE.address && <>Registered address: {SITE.address}<br /></>}
+                These terms apply to orders placed within Pakistan.
+              </p>
+              <a
+                href="#top"
+                onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors shrink-0 inline-flex items-center gap-1.5"
+              >
+                <ArrowUp className="w-3.5 h-3.5" /> Back to top
+              </a>
+            </div>
+          </article>
         </div>
       </main>
 

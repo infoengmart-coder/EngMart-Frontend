@@ -21,6 +21,7 @@ import {
   Globe,
   FolderTree,
   Tag,
+  BadgePercent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -69,6 +70,7 @@ const NAV_SECTIONS: NavSection[] = [
       { name: "Products", href: "/admin/products", icon: Package },
       { name: "Categories", href: "/admin/categories", icon: FolderTree },
       { name: "Brands", href: "/admin/brands", icon: Tag },
+      { name: "Discounts", href: "/admin/discounts", icon: BadgePercent },
       { name: "Banners", href: "/admin/banners", icon: ImageIcon },
     ],
   },

@@ -14,6 +14,8 @@ export type CartItem = {
   // Display info (snapshot at time of add)
   name: string
   brand: string
+  /** Brand slug, so live discounts can be looked up without name matching. */
+  brandSlug?: string
   brandColor?: string
   category: string
   catNo: string
@@ -21,13 +23,22 @@ export type CartItem = {
   image?: string
   // Pricing
   quantity: number
-  unitPrice: number       // 0 if price-on-request
+  unitPrice: number       // 0 if price-on-request, and always BEFORE discount
   isPriceOnRequest: boolean
+  /**
+   * Brand discount running when this item was added.
+   *
+   * A snapshot only. The cart and checkout re-read today's percentage from
+   * `useBrandDiscounts()` and prefer that, because a basket can sit in
+   * localStorage long after the campaign it was added under has ended.
+   */
+  discountPercent?: number
 }
 
 type CartCtx = {
   items: CartItem[]
   count: number
+  /** Sum of unit price x quantity, BEFORE any brand discount. */
   subtotal: number
   /** False until localStorage has been read. Gate "empty cart" UI on this,
    *  or returning customers see an empty-cart flash on every load. */

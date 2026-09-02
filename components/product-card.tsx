@@ -7,11 +7,12 @@ import { useAuthGate } from '@/lib/auth-gate'
 import { useAccount } from '@/lib/account-context'
 import { mediaUrl } from '@/lib/api'
 import { brandLogo } from '@/lib/brand-logos'
+import { brandDiscountPercent, discountedUnitPrice } from '@/lib/brand-discount'
 import { ProductQuickView } from '@/components/product-quick-view'
 
 interface Product {
   id: number; name: string; slug: string;
-  brand?: string | { name?: string; color?: string; slug?: string; logo?: string | null } | null; brand_name?: string;
+  brand?: string | { name?: string; color?: string; slug?: string; logo?: string | null; discount_percent?: number } | null; brand_name?: string;
   category?: string | { name?: string } | null; category_name?: string;
   series?: string; catNo?: string; short_description?: string; specs?: string[];
   image?: string | null;
@@ -41,6 +42,9 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
   const categoryName = typeof product.category === 'string' ? product.category : (product.category?.name || product.category_name || 'Electrical Equipment')
   const catNo = product.catNo || product.series || product.first_variant?.cat_no || ''
   const brandColor = (typeof product.brand === 'object' && product.brand?.color) || BRAND_COLORS[brandName] || 'var(--primary)'
+  // Brand-wide discount, straight off the embedded brand payload. Already
+  // zeroed by the backend when the campaign is paused, so no extra guard here.
+  const discountPercent = brandDiscountPercent(product.brand)
   const fallback = '/product-placeholder.svg'
 
   // Brand wordmark for the corner badge, replacing the coloured dot. An admin-
@@ -74,6 +78,23 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
   }
 
   // Price calculation
+  //
+  // With a brand discount running, the ORIGINAL price is struck through beside
+  // the price actually payable. Showing only the reduced figure would leave the
+  // customer unable to see the saving the storefront is advertising.
+  const money = (n: number) => n.toLocaleString('en-PK', { maximumFractionDigits: 0 })
+  const PriceValue = ({ value, className }: { value: number; className?: string }) =>
+    discountPercent > 0 ? (
+      <span className="flex items-baseline gap-1.5 flex-wrap">
+        <span className={className}>{money(discountedUnitPrice(value, discountPercent))}</span>
+        <span className="text-[11px] font-bold text-muted-foreground line-through decoration-1">
+          {money(value)}
+        </span>
+      </span>
+    ) : (
+      <span className={className}>{money(value)}</span>
+    )
+
   let priceDisplay: React.ReactNode = (
     <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary rounded-full text-xs font-bold shadow-2xs">
       <svg className="w-3 h-3 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -87,18 +108,27 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
       priceDisplay = (
         <div className="flex items-baseline gap-1">
           <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">PKR</span>
-          <span className="text-base sm:text-lg font-black text-foreground tracking-tight">
-            {min.toLocaleString('en-PK')}
-          </span>
+          <PriceValue value={min} className="text-base sm:text-lg font-black text-foreground tracking-tight" />
         </div>
       )
     } else if (min > 0 && max > 0) {
       priceDisplay = (
         <div className="flex items-baseline gap-1">
           <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">PKR</span>
-          <span className="text-sm sm:text-base font-black text-foreground tracking-tight">
-            {min.toLocaleString('en-PK')} – {max.toLocaleString('en-PK')}
-          </span>
+          {discountPercent > 0 ? (
+            <span className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-sm sm:text-base font-black text-foreground tracking-tight">
+                {money(discountedUnitPrice(min, discountPercent))} – {money(discountedUnitPrice(max, discountPercent))}
+              </span>
+              <span className="text-[11px] font-bold text-muted-foreground line-through decoration-1">
+                {money(min)} – {money(max)}
+              </span>
+            </span>
+          ) : (
+            <span className="text-sm sm:text-base font-black text-foreground tracking-tight">
+              {money(min)} – {money(max)}
+            </span>
+          )}
         </div>
       )
     }
@@ -108,9 +138,7 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
       priceDisplay = (
         <div className="flex items-baseline gap-1">
           <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">PKR</span>
-          <span className="text-base sm:text-lg font-black text-foreground tracking-tight">
-            {pVal.toLocaleString('en-PK')}
-          </span>
+          <PriceValue value={pVal} className="text-base sm:text-lg font-black text-foreground tracking-tight" />
         </div>
       )
     }
@@ -153,13 +181,18 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
       variantId: null,
       name: product.name,
       brand: brandName,
+      brandSlug: brandSlug,
       brandColor: brandColor,
       category: categoryName,
       catNo: catNo,
       variantDescription: product.first_variant?.description || '',
       image: finalImg,
+      // The UNDISCOUNTED unit price. The cart re-applies today's brand
+      // percentage on top, so storing the reduced figure here would discount
+      // the same line twice.
       unitPrice,
       isPriceOnRequest,
+      discountPercent,
     })
   }
 
@@ -230,6 +263,14 @@ export function ProductCard({ product, imageUrl, index = 0, isNew = false, onQui
           >
             <Heart className={`w-4 h-4 transition-transform duration-200 ${isWishlisted ? 'fill-rose-600 text-rose-600 scale-110' : ''}`} />
           </button>
+
+          {/* Brand discount ribbon — bottom-left so it never collides with the
+              wishlist heart or the New Arrival pill in the top corners. */}
+          {discountPercent > 0 && (
+            <div className="absolute bottom-3 left-3 z-20 bg-gradient-to-r from-rose-600 to-red-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide text-white shadow-lg border border-white/20">
+              {discountPercent}% OFF
+            </div>
+          )}
 
           {/* NEW ARRIVAL Badge - Gradient Premium */}
           {isNewArrival && (

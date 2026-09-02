@@ -61,7 +61,7 @@ const FIELDS: FieldSpec[] = [
   {
     key: "whatsapp",
     label: "WhatsApp Number",
-    placeholder: "+92 311 2763951",
+    placeholder: "+92 322 2357073",
     hint: "Drives every WhatsApp button. Include the country code.",
     icon: MessageCircle,
     type: "tel",

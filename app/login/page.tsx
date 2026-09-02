@@ -54,7 +54,7 @@ export default function LoginPage() {
           {/* Logo on top left */}
           <div className="self-start">
             <Link href="/">
-              <Image src="/header_logo.png" alt="Eng-Mart" width={130} height={36} className="h-8 w-auto" />
+              <Image src="/header_logo.png" alt="Eng-Mart" width={260} height={87} priority className="h-12 sm:h-14 w-auto" />
             </Link>
           </div>
 

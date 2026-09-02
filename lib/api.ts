@@ -33,6 +33,14 @@ export type Brand = {
   categories?: CategoryChild[]
   /** False hides the brand NAME from storefront lists; its products stay. */
   show_in_filters?: boolean
+  /**
+   * Brand-wide discount currently IN FORCE, as a percentage (0 = none).
+   * The backend already zeroes this while a campaign is paused, so it can be
+   * used directly without re-checking an "active" flag.
+   */
+  discount_percent?: number
+  /** Optional campaign name, e.g. "Ramadan Sale". */
+  discount_label?: string
 }
 
 export type CategoryChild = {
@@ -323,6 +331,35 @@ export async function getBrand(slug: string): Promise<Brand> {
   return apiFetch<Brand>(`/brands/${slug}/`)
 }
 
+/** One brand's live discount, as returned by /brands/discounts/. */
+export type BrandDiscount = {
+  id: number
+  name: string
+  slug: string
+  discount_percent: number
+  discount_label?: string
+}
+
+/**
+ * Every brand with a discount running right now.
+ *
+ * Only brands that actually have one are returned, so the usual response is an
+ * empty array. The cart calls this on load: a basket saved in localStorage
+ * weeks ago must be re-priced against today's campaigns, never the percentage
+ * that was snapshotted when the item was added.
+ */
+export async function getBrandDiscounts(): Promise<BrandDiscount[]> {
+  return apiClientFetch<BrandDiscount[]>('/brands/discounts/')
+}
+
+/** Set (or clear) a brand's discount. Admin only. */
+export async function setBrandDiscount(
+  slug: string,
+  data: { discount_percent: number; discount_active: boolean; discount_label?: string },
+): Promise<AdminBrand> {
+  return updateBrand(slug, data)
+}
+
 // ─── Categories API ──────────────────────────────────────────
 
 export async function getCategories(): Promise<Category[]> {
@@ -420,6 +457,8 @@ export type OrderResponse = {
   company_name: string
   subtotal: string
   discount_amount: string
+  /** Share of discount_amount that came from brand-wide campaigns. */
+  brand_discount_amount?: string
   /** Charges snapshotted at order time — see apps/orders/charges.py. */
   gst_percent: string
   tax_amount: string
@@ -441,7 +480,13 @@ export type OrderResponse = {
     cat_no: string
     brand_name: string
     quantity: number
+    /** Unit price BEFORE the brand discount. */
     unit_price: string
+    /** Brand discount snapshotted on this line, as a percentage. */
+    discount_percent?: string
+    /** Money the brand discount took off this line. */
+    discount_amount?: string
+    /** unit_price x quantity, less discount_amount. */
     line_total: string
     is_price_on_request: boolean
   }[]
@@ -863,6 +908,12 @@ export type AdminBrand = {
   is_active: boolean
   product_count: number
   created_at: string
+  /** Raw configured percentage — kept even while the campaign is paused. */
+  discount_percent?: number | string
+  discount_active?: boolean
+  discount_label?: string
+  /** What customers actually get right now: 0 whenever the campaign is off. */
+  effective_discount_percent?: number
 }
 
 export async function getAdminBrands(): Promise<AdminBrand[]> {

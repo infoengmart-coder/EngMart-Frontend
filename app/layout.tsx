@@ -11,9 +11,11 @@ import { AccountProvider } from '@/lib/account-context'
 import { SiteSettingsProvider } from '@/lib/site-settings'
 import { OptionalClerkProvider } from '@/lib/clerk-provider'
 import { WelcomeDiscountProvider } from '@/lib/welcome-discount'
+import { BrandDiscountProvider } from '@/lib/brand-discount'
 import { WelcomeDiscountModal } from '@/components/welcome-discount-modal'
 import { SiteChrome } from '@/components/site-chrome'
 import { SiteStructuredData } from '@/components/structured-data'
+import { Analytics } from '@/components/analytics'
 import {
   SITE_URL, SITE_NAME, SITE_LEGAL_NAME, OG_IMAGE, CORE_KEYWORDS, clampDescription,
   NOINDEX_SITE,
@@ -61,6 +63,39 @@ export const metadata: Metadata = {
   category: 'Industrial Electrical Equipment',
   alternates: { canonical: SITE_URL },
   formatDetection: { telephone: true, address: false, email: true },
+  // Icons are declared explicitly as well as being auto-detected from
+  // app/icon.png + app/apple-icon.png. The project was still shipping
+  // create-next-app's stock favicon, which is why the Vercel mark appeared in
+  // the browser tab and next to the URL in Google results — Google reads the
+  // favicon, not the OG image, for that little square beside a search hit.
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
+    shortcut: ['/favicon.ico'],
+  },
+  manifest: '/site.webmanifest',
+  /**
+   * Google Search Console site ownership.
+   *
+   * Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION to the content string Google
+   * gives you under "HTML tag" verification — just the token, not the whole
+   * <meta> element. Omitted entirely when unset, so no empty tag is emitted.
+   *
+   * Search Console is what reports the queries people actually searched, your
+   * ranking positions and any indexing errors. Nothing else exposes that data.
+   */
+  // Like the GA measurement ID, this token is public by design — it is served
+  // in the HTML of every page so Google can read it, and it grants no access
+  // to anything. Hardcoding the default means verification survives a deploy
+  // where nobody remembered to set the variable.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      || 'RChuTmoPIZ-XyugQn3NANeLBLkZdsMuluVOQs9EzNr0',
+  },
   // NEXT_PUBLIC_NOINDEX=true blocks the whole site — used while the storefront
   // is live but its API is not, so Google never sees an empty catalogue.
   robots: NOINDEX_SITE
@@ -152,6 +187,9 @@ export default function RootLayout({
         <ThemeProvider>
           <SiteSettingsProvider>
             <AuthProvider>
+              {/* Outside CartProvider: brand campaigns are catalog data, not
+                  basket state, and the cart re-prices saved lines against it. */}
+              <BrandDiscountProvider>
               <CartProvider>
                 <AccountProvider>
                   {/* Inside AuthProvider and SiteSettingsProvider — it needs
@@ -168,8 +206,12 @@ export default function RootLayout({
                   </WelcomeDiscountProvider>
                 </AccountProvider>
               </CartProvider>
+              </BrandDiscountProvider>
             </AuthProvider>
             <SiteChrome />
+            {/* Last in the tree, loaded afterInteractive — measurement must
+                never delay the content being measured. */}
+            <Analytics />
           </SiteSettingsProvider>
         </ThemeProvider>
         </OptionalClerkProvider>

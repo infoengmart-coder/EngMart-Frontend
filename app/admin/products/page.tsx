@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Plus, Search, Edit, Trash2, Eye,
   Upload, Download, Layers, Tag, Check, AlertCircle, ImagePlus, X,
-  Image as ImageIcon
+  Image as ImageIcon, Loader2
 } from "lucide-react";
 
 /* ── Image Upload Box ── */
@@ -60,13 +60,15 @@ function ImageUploadBox({
 
 import { getProducts, getBrands, getCategories, createProduct, updateProduct, deleteProduct, uploadProductImage, mediaUrl, Product, Brand, CategoryChild } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AdminImageStudio } from "@/components/admin-image-studio";
+import { prepareImage, formatBytes } from "@/lib/image-upload";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<CategoryChild[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"catalog" | "inventory" | "taxonomies">("catalog");
+  const [activeTab, setActiveTab] = useState<"catalog" | "images" | "inventory" | "taxonomies">("catalog");
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -95,25 +97,45 @@ export default function ProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [formImageDragging, setFormImageDragging] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const REQUESTED_PAGE_SIZE = 100;
       const [prodRes, brandList, catList] = await Promise.all([
-        getProducts({ page_size: 100 } as any),
+        getProducts({ page_size: REQUESTED_PAGE_SIZE } as any),
         getBrands(),
         getCategories(),
       ]);
-      // Fetch ALL pages so the admin sees the full catalog — not just page 1.
+
+      // Fetch ALL pages so the admin sees the full catalog — but fetch the
+      // remaining ones AT ONCE rather than in a serial while-loop.
+      //
+      // The old loop awaited each page before asking for the next, so a
+      // 5,000-product catalog was 50 round-trips end to end — the single
+      // biggest reason this screen took so long to become usable. `count` from
+      // the first response tells us exactly how many pages there are, so the
+      // rest can go out together and the wait collapses to roughly one
+      // round-trip.
       let allProducts = prodRes.results || [];
-      let nextUrl = prodRes.next;
-      let nextPage = 2;
-      while (nextUrl) {
-        const more = await getProducts({ page_size: 100, page: nextPage } as any).catch(() => null);
-        if (!more) break;
-        allProducts = [...allProducts, ...(more.results || [])];
-        nextUrl = more.next;
-        nextPage++;
+      const total = prodRes.count || allProducts.length;
+      // Page size is read back from the RESPONSE, not from what we asked for.
+      // The API caps page_size (StandardPagination.max_page_size), so a larger
+      // request is silently trimmed — computing the page count from the
+      // requested size would then skip pages and drop half the catalog without
+      // any error to notice.
+      const pageSize = allProducts.length || REQUESTED_PAGE_SIZE;
+      const pageCount = Math.ceil(total / pageSize);
+      if (pageCount > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: pageCount - 1 }, (_, i) =>
+            getProducts({ page_size: pageSize, page: i + 2 } as any).catch(() => null)
+          )
+        );
+        for (const chunk of rest) {
+          if (chunk?.results) allProducts = allProducts.concat(chunk.results);
+        }
       }
       setProducts(allProducts);
       setBrands(brandList || []);
@@ -134,6 +156,33 @@ export default function ProductsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  /**
+   * Merge one product back into local state instead of refetching everything.
+   *
+   * Re-running `loadData()` after every edit meant re-downloading the entire
+   * catalog to reflect a single changed row — seconds of spinner for a change
+   * the response already described. Patching in place is what makes saving and
+   * image uploads feel instant.
+   */
+  const patchProduct = (saved: any) => {
+    if (!saved?.slug) return;
+    setProducts(prev => {
+      const index = prev.findIndex(p => p.slug === saved.slug || p.id === saved.id);
+      if (index === -1) return [saved as Product, ...prev];
+      const next = prev.slice();
+      // Merge rather than replace: the detail response the write endpoints
+      // return omits a few list-only fields (brand_name, category_name), and
+      // overwriting the row wholesale would blank those columns.
+      next[index] = { ...next[index], ...saved } as Product;
+      return next;
+    });
+  };
+
+  /** Update just the image path on one row, for the Images tab. */
+  const patchProductImage = (slug: string, image: string | null) => {
+    setProducts(prev => prev.map(p => (p.slug === slug ? { ...p, image } : p)));
+  };
 
   const handleOpenAdd = () => {
     setEditingProduct(null);
@@ -182,7 +231,11 @@ export default function ProductsPage() {
     }
   };
 
+  /** Bytes saved by browser-side compression on the last upload, for the form hint. */
+  const [compressionNote, setCompressionNote] = useState("");
+
   const handleSave = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!formBrandId || !formCategoryId) {
       setActionError("Please select a brand and a category.");
@@ -223,14 +276,27 @@ export default function ProductsPage() {
 
       // Images travel on their own endpoint (multipart) after the JSON body is
       // saved — sending both together would drop the nested variant edits.
+      let withImage = saved;
       if (imageFile && saved?.slug) {
-        await uploadProductImage(saved.slug, imageFile);
+        // Downscale in the browser first. A phone photo is routinely 4–8 MB and
+        // 4000px wide; the catalog never renders above 1600px, so sending the
+        // original was spending tens of seconds uploading pixels nobody sees.
+        const prepared = await prepareImage(imageFile);
+        withImage = await uploadProductImage(saved.slug, prepared.file);
+        setCompressionNote(
+          prepared.passthrough
+            ? ""
+            : `Image compressed ${formatBytes(prepared.originalSize)} → ${formatBytes(prepared.file.size)} before upload.`
+        );
       }
+
+      // Patch the single row rather than refetching the catalog — the response
+      // already contains everything that changed.
+      patchProduct(withImage || saved);
 
       setShowAddForm(false);
       setImageFile(null);
       setImagePreview("");
-      await loadData();
     } catch (err: any) {
       setActionError(err.message || "Failed to save product");
     } finally {
@@ -245,7 +311,9 @@ export default function ProductsPage() {
     setDeleteBusy(true);
     try {
       await deleteProduct(pendingDeleteSlug);
-      await loadData();
+      // Same reasoning as saving: remove the row locally instead of
+      // re-downloading the whole catalog to discover it is gone.
+      setProducts(prev => prev.filter(p => p.slug !== pendingDeleteSlug));
     } catch (err: any) {
       setActionError(err.message || "Failed to delete product");
     } finally {
@@ -275,6 +343,8 @@ export default function ProductsPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const missingImageCount = products.filter(p => !p.image).length;
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -322,7 +392,7 @@ export default function ProductsPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-border">
-        {(["catalog", "inventory", "taxonomies"] as const).map(tab => (
+        {(["catalog", "images", "inventory", "taxonomies"] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -330,7 +400,13 @@ export default function ProductsPage() {
               activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab === "catalog" ? "Catalog View" : tab === "inventory" ? "Stock & Inventory" : "Categories & Brands"}
+            {tab === "catalog"
+              ? "Catalog View"
+              : tab === "images"
+              ? `Product Images${missingImageCount > 0 ? ` (${missingImageCount} missing)` : ""}`
+              : tab === "inventory"
+              ? "Stock & Inventory"
+              : "Categories & Brands"}
           </button>
         ))}
       </div>
@@ -351,7 +427,24 @@ export default function ProductsPage() {
               <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5">Product Image</label>
               <div
                 onClick={() => imageInputRef.current?.click()}
-                className="relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer h-40 group hover:border-primary/60 transition-colors bg-secondary/20"
+                onDragOver={e => { e.preventDefault(); setFormImageDragging(true); }}
+                onDragLeave={() => setFormImageDragging(false)}
+                onDrop={e => {
+                  // Dropping straight onto the box saves opening a file dialog
+                  // for every product.
+                  e.preventDefault();
+                  setFormImageDragging(false);
+                  const dropped = Array.from(e.dataTransfer.files).find(f => f.type.startsWith("image/"));
+                  if (!dropped) return;
+                  setImageFile(dropped);
+                  setImagePreview(prev => {
+                    if (prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+                    return URL.createObjectURL(dropped);
+                  });
+                }}
+                className={`relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer h-40 group transition-colors ${
+                  formImageDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/60 bg-secondary/20"
+                }`}
               >
                 {imagePreview ? (
                   <>
@@ -363,8 +456,8 @@ export default function ProductsPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-2 text-center p-4">
                     <ImageIcon className="w-7 h-7 text-muted-foreground/50" />
-                    <p className="text-xs font-semibold text-foreground">Click to upload</p>
-                    <p className="text-[10px] text-muted-foreground">PNG, JPG, WEBP</p>
+                    <p className="text-xs font-semibold text-foreground">Click or drop an image</p>
+                    <p className="text-[10px] text-muted-foreground">PNG, JPG, WEBP — large photos are compressed automatically</p>
                   </div>
                 )}
                 <input
@@ -377,9 +470,23 @@ export default function ProductsPage() {
               </div>
               {imageFile && (
                 <p className="mt-1.5 text-[10px] text-emerald-600 font-semibold truncate">
-                  New image: {imageFile.name}
+                  New image: {imageFile.name} ({formatBytes(imageFile.size)})
                 </p>
               )}
+              {compressionNote && !imageFile && (
+                <p className="mt-1.5 text-[10px] text-muted-foreground font-semibold">{compressionNote}</p>
+              )}
+              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
+                Adding images to many products? Use the{" "}
+                <button
+                  type="button"
+                  onClick={() => { setShowAddForm(false); setActiveTab("images"); }}
+                  className="text-primary font-bold hover:underline cursor-pointer"
+                >
+                  Product Images
+                </button>{" "}
+                tab to upload a whole folder at once.
+              </p>
               {imagePreview && (
                 <button
                   type="button"
@@ -628,6 +735,18 @@ export default function ProductsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── IMAGES VIEW ── */}
+      {activeTab === "images" && (
+        loading ? (
+          <div className="bg-card rounded-xl border border-border shadow-sm p-14 text-center">
+            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Loading catalog…</p>
+          </div>
+        ) : (
+          <AdminImageStudio products={products} onImageChanged={patchProductImage} />
+        )
       )}
 
       {/* ── INVENTORY VIEW ── */}

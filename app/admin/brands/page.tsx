@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Edit, X, Award, Search, ImagePlus, Eye, EyeOff, Globe } from "lucide-react";
+import { Plus, Trash2, Edit, X, Award, Search, ImagePlus, Eye, EyeOff, Globe, BadgePercent, Check } from "lucide-react";
+import Link from "next/link";
+import { BrandSelect } from "@/components/brand-select";
 import { brandLogo } from "@/lib/brand-logos";
 import {
   getAdminBrands, createBrand, updateBrand, deleteBrand,
@@ -33,10 +35,20 @@ export default function AdminBrandsPage() {
   /** Built-in wordmark for the brand being edited, if one exists. */
   const [bundledLogo, setBundledLogo] = useState<string | null>(null);
 
-  const load = () => {
+  /** Brand chosen in the "jump to brand" dropdown. */
+  const [picked, setPicked] = useState("");
+  /** Name of the brand saved a moment ago, confirmed above the dropdown. */
+  const [justSaved, setJustSaved] = useState("");
+
+  const load = (opts?: { select?: string }) => {
     setLoading(true);
-    getAdminBrands()
-      .then(setItems)
+    return getAdminBrands()
+      .then((rows) => {
+        setItems(rows || []);
+        // Point the dropdown at whatever was just created, so a new brand is
+        // visibly IN the list rather than something the admin has to hunt for.
+        if (opts?.select) setPicked(opts.select);
+      })
       .catch((e) => setError(e.message || "Failed to load brands"))
       .finally(() => setLoading(false));
   };
@@ -91,9 +103,14 @@ export default function AdminBrandsPage() {
     e.preventDefault();
     setSaving(true); setError("");
     try {
-      if (editing) await updateBrand(editing.slug, buildPayload());
-      else await createBrand(buildPayload());
-      resetForm(); load();
+      const savedName = name.trim();
+      const saved = editing
+        ? await updateBrand(editing.slug, buildPayload())
+        : await createBrand(buildPayload());
+      resetForm();
+      await load({ select: saved?.slug });
+      setJustSaved(savedName);
+      setTimeout(() => setJustSaved(""), 5000);
     } catch (err: any) {
       setError(err.message || "Failed to save brand");
     } finally { setSaving(false); }
@@ -130,6 +147,55 @@ export default function AdminBrandsPage() {
         </button>
       </div>
 
+      {/* Brand list dropdown.
+
+          The table below is the full record, but with ~70 brands it is a long
+          scroll. This is the fast path: every brand in one list, filterable by
+          typing, and picking one opens it for editing straight away. A brand
+          added a moment ago is already selected here, so it is obvious it
+          landed in the list. */}
+      <div className="bg-card border border-border rounded-xl p-4 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <label className="text-xs font-bold text-muted-foreground">
+            All brands ({items.length})
+          </label>
+          <Link href="/admin/discounts" className="text-[11px] font-semibold text-primary hover:underline">
+            Set brand discounts →
+          </Link>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <BrandSelect
+            className="flex-1"
+            brands={items}
+            value={picked}
+            onChange={(b) => setPicked(b.slug)}
+            disabled={loading}
+            placeholder={loading ? "Loading brands…" : "Select a brand to view or edit…"}
+            badgeFor={(b) => {
+              const pct = Number(b.discount_percent);
+              return b.discount_active !== false && pct > 0 ? `${pct}%` : null;
+            }}
+          />
+          <button
+            type="button"
+            disabled={!picked}
+            onClick={() => {
+              const brand = items.find((b) => b.slug === picked);
+              if (brand) openEdit(brand);
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          >
+            <Edit className="w-3.5 h-3.5" /> Edit selected
+          </button>
+        </div>
+        {justSaved && (
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+            <Check className="w-3.5 h-3.5" />
+            “{justSaved}” saved — it's in the list above.
+          </p>
+        )}
+      </div>
+
       {/* Search */}
       <div className="relative mb-4 max-w-md">
         <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
@@ -147,15 +213,16 @@ export default function AdminBrandsPage() {
                 <th className="text-left font-semibold px-4 py-3">Origin</th>
                 <th className="text-left font-semibold px-4 py-3">Supplier</th>
                 <th className="text-left font-semibold px-4 py-3">Products</th>
+                <th className="text-left font-semibold px-4 py-3">Discount</th>
                 <th className="text-left font-semibold px-4 py-3">Status</th>
                 <th className="text-right font-semibold px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Loading…</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">No brands found.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">No brands found.</td></tr>
               ) : filtered.map((b) => {
                 // Same precedence the storefront uses: an admin-uploaded logo
                 // wins, then the wordmark bundled in public/Logo, then a
@@ -177,6 +244,26 @@ export default function AdminBrandsPage() {
                   <td className="px-4 py-3 text-slate-500">{b.origin_country || <span className="text-slate-300">—</span>}</td>
                   <td className="px-4 py-3 text-slate-500">{b.supplier_name || <span className="text-slate-300">—</span>}</td>
                   <td className="px-4 py-3 text-slate-600">{b.product_count}</td>
+                  <td className="px-4 py-3">
+                    {Number(b.discount_percent) > 0 ? (
+                      <Link
+                        href="/admin/discounts"
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+                          b.discount_active !== false
+                            ? "bg-rose-50 text-rose-600"
+                            : "bg-slate-100 text-slate-400"
+                        }`}
+                        title={b.discount_active !== false ? "Live discount" : "Paused discount"}
+                      >
+                        <BadgePercent className="w-3 h-3" />
+                        {Number(b.discount_percent)}%
+                      </Link>
+                    ) : (
+                      <Link href="/admin/discounts" className="text-xs text-slate-400 hover:text-primary hover:underline">
+                        Add
+                      </Link>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <button onClick={() => toggleActive(b)}
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold cursor-pointer ${b.is_active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>

@@ -490,10 +490,22 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   <span className="text-slate-800">PKR {c.subtotal.toLocaleString('en-PK')}</span>
                 </div>
 
-                {c.discount > 0 && (
+                {/* `c.discount` is the GRAND total taken off. The brand share
+                    is broken out of it, not added to it, so these two rows
+                    always sum back to c.discount. */}
+                {Math.min(order.brandDiscount || 0, c.discount) > 0 && (
+                  <div className="flex justify-between text-rose-600">
+                    <span>Brand discount</span>
+                    <span>-PKR {Math.min(order.brandDiscount || 0, c.discount).toLocaleString('en-PK')}</span>
+                  </div>
+                )}
+
+                {c.discount - Math.min(order.brandDiscount || 0, c.discount) > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Discount{order.discountCode ? ` (${order.discountCode})` : ''}</span>
-                    <span>-PKR {c.discount.toLocaleString('en-PK')}</span>
+                    <span>
+                      -PKR {(c.discount - Math.min(order.brandDiscount || 0, c.discount)).toLocaleString('en-PK')}
+                    </span>
                   </div>
                 )}
 

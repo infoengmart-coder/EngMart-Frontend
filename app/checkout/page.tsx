@@ -7,6 +7,7 @@ import { useCart } from '@/lib/cart'
 import { createOrder, validatePromoCode, formatPrice, uploadPaymentSlip, type OrderResponse, type PromoValidationResult } from '@/lib/api'
 import { useWelcomeDiscount } from '@/lib/welcome-discount'
 import { previewCharges, gstLabel } from '@/lib/charges'
+import { useBrandDiscounts, lineDiscount, totalBasket } from '@/lib/brand-discount'
 import { useSiteSettings } from '@/lib/site-settings'
 import { useAuth } from '@/lib/auth'
 import { useAccount } from '@/lib/account-context'
@@ -92,6 +93,21 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false)
   const [promoError, setPromoError] = useState('')
 
+  // Brand-wide discounts, re-read live rather than trusted from the saved
+  // basket — a cart can outlive the campaign it was filled under.
+  const { percentFor } = useBrandDiscounts()
+  const pricedItems = items.map(item => ({ ...item, percent: percentFor(item) }))
+  // Per line, never on the total: a basket mixing brands on different
+  // percentages has no single meaningful rate.
+  const { brandDiscount, net: payableSubtotal } = totalBasket(
+    pricedItems.map(l => ({
+      unitPrice: l.unitPrice,
+      quantity: l.quantity,
+      discountPercent: l.percent,
+      isPriceOnRequest: l.isPriceOnRequest,
+    })),
+  )
+
   // Discount precedence mirrors apps/orders/welcome.py exactly: an entered
   // promo code wins, and the first-order welcome discount only applies when no
   // code did. Displaying them stacked here would promise a saving the server
@@ -102,8 +118,13 @@ export default function CheckoutPage() {
     refresh: refreshWelcomeDiscount,
   } = useWelcomeDiscount()
   const promoDiscount = promoResult?.valid ? parseFloat(promoResult.discount_amount || '0') : 0
-  const welcomeDiscount = promoDiscount > 0 ? 0 : discountFor(subtotal)
-  const discountAmount = promoDiscount > 0 ? promoDiscount : welcomeDiscount
+  // Promo and welcome offers apply to what is left AFTER brand discounts,
+  // matching apps/orders/serializers.py — running them on the gross subtotal
+  // would hand back part of the same money twice.
+  const welcomeDiscount = promoDiscount > 0 ? 0 : discountFor(payableSubtotal)
+  const promoOrWelcome = promoDiscount > 0 ? promoDiscount : welcomeDiscount
+  // What comes off the subtotal in total. GST is charged on the remainder.
+  const discountAmount = brandDiscount + promoOrWelcome
 
   // GST and the COD charge now come from site settings and are computed by the
   // same rules the server uses, so the total shown here is the total stored on
@@ -131,7 +152,7 @@ export default function CheckoutPage() {
     setPromoLoading(true)
     setPromoError('')
     try {
-      const result = await validatePromoCode(code, subtotal)
+      const result = await validatePromoCode(code, payableSubtotal)
       if (result.valid) {
         setPromoResult(result)
         setPromoError('')
@@ -297,12 +318,24 @@ export default function CheckoutPage() {
                             {it.variant_description || it.cat_no}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground">Qty {it.quantity}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Qty {it.quantity}
+                          {parseFloat(it.discount_percent || '0') > 0 && (
+                            <span className="ml-1.5 font-black text-rose-500">
+                              -{parseFloat(it.discount_percent || '0')}% brand offer
+                            </span>
+                          )}
+                        </span>
                       </span>
-                      <span className="shrink-0 font-bold text-foreground">
+                      <span className="shrink-0 font-bold text-foreground text-right">
                         {it.is_price_on_request
                           ? 'On request'
                           : formatPrice(parseFloat(it.line_total))}
+                        {parseFloat(it.discount_amount || '0') > 0 && (
+                          <span className="block text-[10px] font-semibold text-muted-foreground line-through">
+                            {formatPrice(parseFloat(it.unit_price) * it.quantity)}
+                          </span>
+                        )}
                       </span>
                     </li>
                   ))}
@@ -320,10 +353,28 @@ export default function CheckoutPage() {
                   <span className="text-muted-foreground font-semibold">Subtotal</span>
                   <span className="font-bold text-foreground">{formatPrice(parseFloat(orderResult.subtotal))}</span>
                 </div>
-                {parseFloat(orderResult.discount_amount) > 0 && (
+                {/* `discount_amount` is the GRAND total taken off; the brand
+                    share is broken out of it so the receipt explains itself
+                    instead of showing one unlabelled deduction. */}
+                {parseFloat(orderResult.brand_discount_amount || '0') > 0 && (
+                  <div className="flex justify-between text-rose-600">
+                    <span className="font-semibold">Brand discount</span>
+                    <span className="font-bold">
+                      -{formatPrice(parseFloat(orderResult.brand_discount_amount || '0'))}
+                    </span>
+                  </div>
+                )}
+                {parseFloat(orderResult.discount_amount) - parseFloat(orderResult.brand_discount_amount || '0') > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span className="font-semibold">Discount</span>
-                    <span className="font-bold">-{formatPrice(parseFloat(orderResult.discount_amount))}</span>
+                    <span className="font-semibold">
+                      {orderResult.promo_code_text ? `Discount (${orderResult.promo_code_text})` : 'Discount'}
+                    </span>
+                    <span className="font-bold">
+                      -{formatPrice(
+                        parseFloat(orderResult.discount_amount)
+                          - parseFloat(orderResult.brand_discount_amount || '0'),
+                      )}
+                    </span>
                   </div>
                 )}
                 {/* Straight off the created order, so the confirmation shows
@@ -787,8 +838,18 @@ export default function CheckoutPage() {
                               {item.brand} • {item.catNo} • Qty: {item.quantity}
                             </p>
                           </div>
-                          <span className="text-xs font-bold text-foreground">
-                            {item.isPriceOnRequest ? 'POR' : formatPrice(item.unitPrice * item.quantity)}
+                          <span className="text-xs font-bold text-foreground text-right">
+                            {item.isPriceOnRequest
+                              ? 'POR'
+                              : formatPrice(
+                                  item.unitPrice * item.quantity
+                                    - lineDiscount(item.unitPrice, item.quantity, percentFor(item)),
+                                )}
+                            {!item.isPriceOnRequest && percentFor(item) > 0 && (
+                              <span className="block text-[10px] font-black text-rose-500">
+                                -{percentFor(item)}%
+                              </span>
+                            )}
                           </span>
                         </div>
                       )
@@ -833,15 +894,20 @@ export default function CheckoutPage() {
 
                 {/* Items */}
                 <div className="space-y-2 mb-5 max-h-48 overflow-y-auto pr-1">
-                  {items.map(item => {
+                  {pricedItems.map(item => {
                     const key = getItemKey(item.slug, item.variantId)
+                    const net = item.unitPrice * item.quantity
+                      - lineDiscount(item.unitPrice, item.quantity, item.percent)
                     return (
                       <div key={key} className="flex justify-between text-xs items-center">
                         <span className="text-foreground font-semibold truncate max-w-[65%]">
                           {item.name} <span className="text-muted-foreground font-medium">×{item.quantity}</span>
+                          {item.percent > 0 && (
+                            <span className="ml-1 text-[10px] font-black text-rose-500">-{item.percent}%</span>
+                          )}
                         </span>
                         <span className="text-foreground font-bold">
-                          {item.isPriceOnRequest ? 'POR' : formatPrice(item.unitPrice * item.quantity)}
+                          {item.isPriceOnRequest ? 'POR' : formatPrice(net)}
                         </span>
                       </div>
                     )
@@ -854,6 +920,18 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>{subtotal > 0 ? formatPrice(subtotal) : 'TBD'}</span>
                   </div>
+
+                  {/* Brand campaigns, itemised separately from a promo code so
+                      the customer can see which saving came from where. */}
+                  {brandDiscount > 0 && (
+                    <div className="flex justify-between items-center text-xs font-bold text-rose-600 dark:text-rose-400">
+                      <span className="flex items-center gap-1.5">
+                        <Lucide.Tag className="w-3.5 h-3.5" />
+                        Brand discount
+                      </span>
+                      <span>-{formatPrice(brandDiscount)}</span>
+                    </div>
+                  )}
 
                   {promoDiscount > 0 && (
                     <div className="flex justify-between items-center text-xs font-bold text-emerald-600">
@@ -914,6 +992,12 @@ export default function CheckoutPage() {
                       <span className="text-xl font-black text-primary">TBD</span>
                     )}
                   </div>
+
+                  {brandDiscount > 0 && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold leading-relaxed pt-1">
+                      🏷 Brand offers saved you {formatPrice(brandDiscount)} on this order.
+                    </p>
+                  )}
 
                   {welcomeDiscount > 0 && (
                     <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold leading-relaxed pt-1">

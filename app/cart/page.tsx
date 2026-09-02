@@ -9,6 +9,7 @@ import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useWelcomeDiscount } from '@/lib/welcome-discount'
+import { useBrandDiscounts, lineDiscount, discountedUnitPrice, totalBasket } from '@/lib/brand-discount'
 import * as Lucide from 'lucide-react'
 
 export default function CartPage() {
@@ -16,9 +17,31 @@ export default function CartPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [confirmClear, setConfirmClear] = useState(false)
 
+  // Brand-wide discounts, re-read live rather than trusted from the saved
+  // basket — see lib/brand-discount.tsx.
+  const { percentFor } = useBrandDiscounts()
+  const pricedLines = items.map(item => ({
+    ...item,
+    percent: percentFor(item),
+  }))
+  // Per line, never on the total: a basket mixing a brand at 20% off with one
+  // at 10% has no single meaningful percentage.
+  const { brandDiscount, net: payableSubtotal } = totalBasket(
+    pricedLines.map(l => ({
+      unitPrice: l.unitPrice,
+      quantity: l.quantity,
+      discountPercent: l.percent,
+      isPriceOnRequest: l.isPriceOnRequest,
+    })),
+  )
+
   // First-order welcome discount, if the server says this customer has one.
+  // Applied to what is left AFTER brand discounts, matching
+  // apps/orders/serializers.py — otherwise part of the same money is given
+  // back twice.
   const { discountFor, percent: welcomePercent } = useWelcomeDiscount()
-  const welcomeDiscount = discountFor(subtotal)
+  const welcomeDiscount = discountFor(payableSubtotal)
+  const grandTotal = Math.max(0, payableSubtotal - welcomeDiscount)
 
   // Fetch related/suggested products from API.
   // Keyed on the set of slugs in the cart (not the items array) so quantity
@@ -112,9 +135,13 @@ export default function CartPage() {
             {/* Cart items */}
             <div className="lg:col-span-2 space-y-4">
               <AnimatePresence mode="popLayout">
-                {items.map((item) => {
+                {pricedLines.map((item) => {
                   const key = getItemKey(item.slug, item.variantId)
                   const imgSrc = item.image || '/product-placeholder.svg'
+                  const pct = item.percent
+                  const netUnit = discountedUnitPrice(item.unitPrice, pct)
+                  const grossLine = item.unitPrice * item.quantity
+                  const netLine = grossLine - lineDiscount(item.unitPrice, item.quantity, pct)
                   return (
                     <motion.div
                       key={key}
@@ -170,6 +197,18 @@ export default function CartPage() {
                               <span className="text-[11px] font-bold text-amber-600">
                                 Price on Request
                               </span>
+                            ) : pct > 0 ? (
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-bold text-foreground">
+                                  {formatPrice(netUnit)} each
+                                </span>
+                                <span className="text-[11px] font-semibold text-muted-foreground line-through">
+                                  {formatPrice(item.unitPrice)}
+                                </span>
+                                <span className="text-[10px] font-black text-white bg-rose-500 px-1.5 py-0.5 rounded">
+                                  {pct}% OFF
+                                </span>
+                              </span>
                             ) : (
                               <span className="text-[11px] font-bold text-muted-foreground">
                                 {formatPrice(item.unitPrice)} each
@@ -179,8 +218,15 @@ export default function CartPage() {
 
                           <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                             {!item.isPriceOnRequest && (
-                              <span className="text-sm font-black text-foreground">
-                                {formatPrice(item.unitPrice * item.quantity)}
+                              <span className="flex items-baseline gap-2">
+                                {pct > 0 && (
+                                  <span className="text-[11px] font-bold text-muted-foreground line-through">
+                                    {formatPrice(grossLine)}
+                                  </span>
+                                )}
+                                <span className="text-sm font-black text-foreground">
+                                  {formatPrice(netLine)}
+                                </span>
                               </span>
                             )}
 
@@ -230,15 +276,20 @@ export default function CartPage() {
 
                 {/* Item list summary */}
                 <div className="space-y-3 mb-5 max-h-48 overflow-y-auto pr-1">
-                  {items.map((item) => {
+                  {pricedLines.map((item) => {
                     const key = getItemKey(item.slug, item.variantId)
+                    const net = item.unitPrice * item.quantity
+                      - lineDiscount(item.unitPrice, item.quantity, item.percent)
                     return (
                       <div key={key} className="flex justify-between text-xs items-center">
                         <span className="text-foreground font-semibold truncate max-w-[65%]">
                           {item.name} <span className="text-muted-foreground font-medium">×{item.quantity}</span>
+                          {item.percent > 0 && (
+                            <span className="ml-1 text-[10px] font-black text-rose-500">-{item.percent}%</span>
+                          )}
                         </span>
                         <span className="text-foreground font-bold">
-                          {item.isPriceOnRequest ? 'POR' : formatPrice(item.unitPrice * item.quantity)}
+                          {item.isPriceOnRequest ? 'POR' : formatPrice(net)}
                         </span>
                       </div>
                     )
@@ -256,6 +307,18 @@ export default function CartPage() {
                       <span>{porItemCount} item{porItemCount > 1 ? 's' : ''}</span>
                     </div>
                   )}
+                  {/* Brand discount. Sums the per-line savings computed above,
+                      so a mixed-brand basket shows the exact figure the server
+                      will charge — not a blended percentage. */}
+                  {brandDiscount > 0 && (
+                    <div className="flex justify-between items-center text-xs font-bold text-rose-600 dark:text-rose-400">
+                      <span className="flex items-center gap-1.5">
+                        <Lucide.Tag className="w-3.5 h-3.5" />
+                        Brand discount
+                      </span>
+                      <span>-{formatPrice(brandDiscount)}</span>
+                    </div>
+                  )}
                   {/* Welcome discount. Shown only when the SERVER has confirmed
                       this customer is eligible, and recalculated there again at
                       checkout — the figure here can never overstate the saving. */}
@@ -271,23 +334,29 @@ export default function CartPage() {
 
                   <div className="flex justify-between items-center pt-2.5 border-t border-dashed border-border">
                     <span className="text-sm font-bold text-foreground">
-                      {welcomeDiscount > 0 ? 'Total' : 'Subtotal'}
+                      {brandDiscount > 0 || welcomeDiscount > 0 ? 'Total' : 'Subtotal'}
                     </span>
                     {subtotal > 0 ? (
                       <span className="flex items-baseline gap-2">
-                        {welcomeDiscount > 0 && (
+                        {(brandDiscount > 0 || welcomeDiscount > 0) && (
                           <span className="text-sm font-bold text-muted-foreground line-through">
                             {formatPrice(subtotal)}
                           </span>
                         )}
                         <span className="text-xl font-black text-primary">
-                          {formatPrice(subtotal - welcomeDiscount)}
+                          {formatPrice(grandTotal)}
                         </span>
                       </span>
                     ) : (
                       <span className="text-xl font-black text-primary">TBD</span>
                     )}
                   </div>
+
+                  {brandDiscount > 0 && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
+                      🏷 You're saving {formatPrice(brandDiscount)} on brand offers in this cart.
+                    </p>
+                  )}
 
                   {welcomeDiscount > 0 && (
                     <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold leading-relaxed">
@@ -375,6 +444,7 @@ export default function CartPage() {
                               variantId: null,
                               name: p.name,
                               brand: p.brand_name,
+                              brandSlug: p.brand?.slug,
                               brandColor: p.brand?.color || 'var(--primary)',
                               category: p.category_name,
                               catNo: p.first_variant?.cat_no || '',
@@ -382,6 +452,7 @@ export default function CartPage() {
                               image: imgSrc,
                               unitPrice: price,
                               isPriceOnRequest: p.has_price_on_request,
+                              discountPercent: Number(p.brand?.discount_percent) || 0,
                             })}
                             className={`min-h-10 sm:min-h-0 px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition-colors cursor-pointer ${
                               inCart

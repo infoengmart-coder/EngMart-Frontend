@@ -2,12 +2,12 @@ export const SITE = {
   name: 'Eng-Mart',
   tagline: 'Premium Industrial Electrical Products',
   description: 'Pakistan\'s premier supplier of industrial electrical equipment — MCBs, MCCBs, Contactors, CTs, Panel Meters and more from world-class brands.',
-  phone: '+92-21-32763951',
-  mobile: '+92-311-2763951',
+  phone: '+92 322 2357073',
+  mobile: '',
   email: 'info@eng-mart.com',
   address: 'Shop No. 5, Pak Chamber, Sarafa Bazar, Karachi, Pakistan',
   hours: 'Mon–Sat: 9:00 AM – 7:00 PM',
-  whatsapp: '+92-311-2763951',
+  whatsapp: '+92 322 2357073',
   url: 'https://eng-mart.com',
 }
 

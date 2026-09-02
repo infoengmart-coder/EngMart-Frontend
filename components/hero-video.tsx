@@ -20,6 +20,7 @@ const FALLBACK = {
   cta_text_2: 'Get Quote',
   cta_link_2: '/contact',
   video_url: '/herovideo.mp4',
+  poster_url: '/hero-poster.jpg',
   highlights: ['📍 Karachi Based', '🚚 Nationwide Delivery'],
 }
 
@@ -99,6 +100,11 @@ export function HeroVideo() {
 
   const imageSrc = hero?.image_src || ''
 
+  // Poster still. Only meaningful for the bundled fallback clip — an
+  // admin-uploaded hero has no matching still, and showing the wrong frame
+  // behind a different video would be worse than showing none.
+  const posterSrc = videoSrc === FALLBACK.video_url ? FALLBACK.poster_url : undefined
+
   const isMultiVideo = heroes.length > 1
 
   // Handle sequential video playlist: when current video ends, advance to next
@@ -144,6 +150,17 @@ export function HeroVideo() {
             autoPlay
             muted
             playsInline
+            /*
+             * Poster + metadata-only preload, for Largest Contentful Paint.
+             *
+             * The hero was a 2560x1440 / 3.3 Mbps clip — 3.9 MB fighting the
+             * page's own render for bandwidth on Pakistani mobile data, and
+             * Core Web Vitals is a ranking signal. It is now re-encoded to
+             * 720p (412 KB) and paints this 39 KB still immediately, so the
+             * hero is visible before a single frame of video arrives.
+             */
+            poster={posterSrc}
+            preload="metadata"
             loop={!isMultiVideo}
             onEnded={handleVideoEnded}
             // src on the element (not a <source> child): a failing <source>

@@ -43,6 +43,10 @@ export function OrderInvoice({ order, site }: OrderInvoiceProps) {
   // fee are snapshotted on the order row, so an invoice reprinted after the
   // admin changes the rate still shows what the customer paid.
   const c = chargesFromOrder(order)
+  // The brand share is broken OUT of the total discount rather than added to
+  // it: `discount` already contains it, so the two rows must sum back to `c.discount`.
+  const brandDiscount = Math.min(Math.max(order.brandDiscount || 0, 0), c.discount)
+  const otherDiscount = c.discount - brandDiscount
   const hasDiscount = c.discount > 0
   const hasTax = c.tax > 0
   const hasCod = c.codFee > 0
@@ -113,6 +117,13 @@ export function OrderInvoice({ order, site }: OrderInvoiceProps) {
                 {item.name}
                 {item.brand ? ` - ${item.brand}` : ''}
                 {item.catNo ? ` MODEL: ${item.catNo}` : ''}
+                {/* Named on the line it applies to, so a mixed-brand invoice
+                    explains where the "Brand Discount" total came from. */}
+                {(item.discountPercent || 0) > 0 && (
+                  <span className="block text-[10px] text-[#b91c1c]">
+                    Brand discount applied: {item.discountPercent}%
+                  </span>
+                )}
               </td>
               <td className="py-2.5 px-2 text-right">{item.quantity}</td>
               <td className="py-2.5 px-2 text-right">
@@ -138,13 +149,22 @@ export function OrderInvoice({ order, site }: OrderInvoiceProps) {
             </td>
           </tr>
 
-          {hasDiscount && (
+          {brandDiscount > 0 && (
+            <tr>
+              <td className="py-2 text-right pr-4">Brand Discount</td>
+              <td className="py-2 text-right text-[#15803d]">
+                -Rs. {brandDiscount.toLocaleString('en-PK')}
+              </td>
+            </tr>
+          )}
+
+          {otherDiscount > 0 && (
             <tr>
               <td className="py-2 text-right pr-4">
                 Discount{order.discountCode ? ` (${order.discountCode})` : ''}
               </td>
               <td className="py-2 text-right text-[#15803d]">
-                -Rs. {c.discount.toLocaleString('en-PK')}
+                -Rs. {otherDiscount.toLocaleString('en-PK')}
               </td>
             </tr>
           )}

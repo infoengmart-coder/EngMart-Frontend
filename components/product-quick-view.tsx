@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart'
+import { brandDiscountPercent, discountedUnitPrice } from '@/lib/brand-discount'
 import { useAuthGate } from '@/lib/auth-gate'
 import { mediaUrl } from '@/lib/api'
 
@@ -28,6 +29,10 @@ export function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewP
   const categoryName = typeof product.category === 'string' ? product.category : (product.category?.name || product.category_name || 'Electrical Equipment')
   const catNo = product.catNo || product.series || product.first_variant?.cat_no || ''
   const brandColor = (typeof product.brand === 'object' && product.brand?.color) || BRAND_COLORS[brandName] || 'var(--primary)'
+  const brandSlug = typeof product.brand === 'object' ? product.brand?.slug : undefined
+  // Brand-wide discount, already zeroed by the backend when paused.
+  const discountPercent = brandDiscountPercent(product.brand)
+  const money = (n: number) => n.toLocaleString('en-PK', { maximumFractionDigits: 0 })
   const fallback = '/product-placeholder.svg'
   
   let finalImg = fallback
@@ -54,10 +59,23 @@ export function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewP
     const { min, max } = product.price_range
     unitPrice = min
     isPriceOnRequest = false
+    const show = (v: number) => money(discountPercent > 0 ? discountedUnitPrice(v, discountPercent) : v)
     priceDisplay = (
-      <div className="text-xl sm:text-2xl font-extrabold text-foreground">
-        PKR {min === max ? min.toLocaleString('en-PK') : `${min.toLocaleString('en-PK')} – ${max.toLocaleString('en-PK')}`}
-        <span className="text-xs text-muted-foreground font-normal ml-2">Excl. Tax</span>
+      <div className="flex flex-wrap items-baseline gap-2">
+        <span className="text-xl sm:text-2xl font-extrabold text-foreground">
+          PKR {min === max ? show(min) : `${show(min)} – ${show(max)}`}
+        </span>
+        {discountPercent > 0 && (
+          <>
+            <span className="text-sm font-bold text-muted-foreground line-through">
+              {min === max ? money(min) : `${money(min)} – ${money(max)}`}
+            </span>
+            <span className="text-[10px] font-black uppercase text-white bg-gradient-to-r from-rose-600 to-red-500 px-2 py-0.5 rounded">
+              {discountPercent}% OFF
+            </span>
+          </>
+        )}
+        <span className="text-xs text-muted-foreground font-normal">Excl. Tax</span>
       </div>
     )
   } else if (product.first_variant?.price) {
@@ -66,9 +84,19 @@ export function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewP
       unitPrice = pVal
       isPriceOnRequest = false
       priceDisplay = (
-        <div className="text-xl sm:text-2xl font-extrabold text-foreground">
-          PKR {pVal.toLocaleString('en-PK')}
-          <span className="text-xs text-muted-foreground font-normal ml-2">Per Unit</span>
+        <div className="flex flex-wrap items-baseline gap-2">
+          <span className="text-xl sm:text-2xl font-extrabold text-foreground">
+            PKR {money(discountPercent > 0 ? discountedUnitPrice(pVal, discountPercent) : pVal)}
+          </span>
+          {discountPercent > 0 && (
+            <>
+              <span className="text-sm font-bold text-muted-foreground line-through">{money(pVal)}</span>
+              <span className="text-[10px] font-black uppercase text-white bg-gradient-to-r from-rose-600 to-red-500 px-2 py-0.5 rounded">
+                {discountPercent}% OFF
+              </span>
+            </>
+          )}
+          <span className="text-xs text-muted-foreground font-normal">Per Unit</span>
         </div>
       )
     }
@@ -82,13 +110,16 @@ export function ProductQuickView({ product, isOpen, onClose }: ProductQuickViewP
         variantId: null,
         name: product.name,
         brand: brandName,
+        brandSlug: brandSlug,
         brandColor: brandColor,
         category: categoryName,
         catNo: catNo,
         variantDescription: product.first_variant?.description || '',
         image: finalImg,
+        // Pre-discount price — the cart applies today's brand percentage.
         unitPrice,
         isPriceOnRequest,
+        discountPercent: isPriceOnRequest ? 0 : discountPercent,
       }, quantity)
     })
   }
