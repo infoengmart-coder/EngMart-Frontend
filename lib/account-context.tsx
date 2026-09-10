@@ -62,7 +62,7 @@ export type Order = {
   shipping: number
   tax: number
   status: OrderStatus
-  paymentStatus: 'Paid' | 'Unpaid' | 'COD'
+  paymentStatus: 'Paid' | 'Unpaid' | 'Cash on Delivery'
   paymentMethod: string
   shippingAddress: Address
   billingAddress: Address
@@ -199,7 +199,9 @@ const PAYMENT_STATUS_MAP: Record<string, Order['paymentStatus']> = {
   unpaid: 'Unpaid',
   partial: 'Unpaid',
   refunded: 'Unpaid',
-  cod: 'COD',
+  // Spelled out, not "COD". Customers reading a receipt should not have to
+  // decode an internal abbreviation to find out how they are paying.
+  cod: 'Cash on Delivery',
 }
 
 const EMPTY_ADDRESS: Address = {
@@ -265,7 +267,7 @@ function apiOrderToAccountOrder(o: OrderResponse): Order {
     status,
     paymentStatus:
       o.payment_method === 'cod' && o.payment_status !== 'paid'
-        ? 'COD'
+        ? 'Cash on Delivery'
         : PAYMENT_STATUS_MAP[o.payment_status] || 'Unpaid',
     paymentMethod: o.payment_method,
     shippingAddress: address,
@@ -616,7 +618,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           tax: 0,
           total: q.quotedTotal || 0,
           status: 'Confirmed',
-          paymentStatus: 'COD',
+          paymentStatus: 'Cash on Delivery',
           paymentMethod: 'Cash on Delivery (Quote Conversion)',
           // The customer's real default address — never a demo one.
           shippingAddress: defaultAddress,

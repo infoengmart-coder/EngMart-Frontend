@@ -317,6 +317,28 @@ export async function searchProducts(query: string): Promise<PaginatedResponse<P
   return apiClientFetch<PaginatedResponse<Product>>('/products/search/', { q: query })
 }
 
+/**
+ * The homepage selection: recent arrivals plus a random sample of the catalog.
+ *
+ * Uses a plain `fetch` with `cache: 'no-store'` rather than the shared client
+ * cache on purpose. The whole point of this endpoint is that it returns a
+ * different mix every time — serving it from cache would show the same forty
+ * products on every refresh, which is the behaviour being fixed.
+ */
+export async function getShowcaseProducts(): Promise<Product[]> {
+  try {
+    const res = await fetch(`${API_BASE}/products/showcase/`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.results || []
+  } catch {
+    return []
+  }
+}
+
 export async function getFeaturedProducts(): Promise<Product[]> {
   return apiFetch<Product[]>('/products/featured/')
 }
@@ -628,10 +650,41 @@ export async function updateOrderStatus(orderNumber: string, data: Partial<Order
 }
 
 export async function createProduct(data: any): Promise<ProductDetail> {
+  // Every other write clears the client cache; this one did not, and that was
+  // the whole bug behind "I add a product, it shows, then it's gone after a
+  // refresh". The new row went into local state fine, but navigating back
+  // re-read the product list from a cache entry up to 10 minutes old — which
+  // predated the product.
+  invalidateCache()
   return authFetch<ProductDetail>('/products/', {
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+/**
+ * The product list for the admin dashboard.
+ *
+ * Deliberately NOT `getProducts()`. That helper goes through the public
+ * stale-while-revalidate cache and sends no Authorization header, which gave
+ * the admin panel two separate faults:
+ *
+ *   1. It served a list that could be 10 minutes stale, so a product added a
+ *      moment ago was missing after any navigation.
+ *   2. With no auth header the backend cannot honour `?all=true`, so every
+ *      product saved as "Draft" vanished from the admin entirely — the admin
+ *      was looking at the PUBLIC catalogue, not their own.
+ *
+ * This goes through authFetch: token attached, `cache: 'no-store'`, and
+ * `?all=true` so drafts are visible to the person who created them.
+ */
+export async function getAdminProducts(
+  params: { page?: number; page_size?: number } = {},
+): Promise<PaginatedResponse<Product>> {
+  const query = new URLSearchParams({ all: 'true' })
+  if (params.page) query.set('page', String(params.page))
+  if (params.page_size) query.set('page_size', String(params.page_size))
+  return authFetch<PaginatedResponse<Product>>(`/products/?${query.toString()}`)
 }
 
 export async function updateProduct(slug: string, data: any): Promise<ProductDetail> {

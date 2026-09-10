@@ -5,67 +5,33 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { ProductCard } from '@/components/product-card'
 import { ProductQuickView } from '@/components/product-quick-view'
-import { getProducts, Product } from '@/lib/api'
-
-/** Fisher-Yates shuffle — unbiased, returns a shuffled copy of the array */
-function shuffleArray<T>(items: T[]): T[] {
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
+import { getShowcaseProducts, Product } from '@/lib/api'
 
 export function FeaturedSection() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeFilter, setActiveFilter] = useState('All')
   const [quickViewProduct, setQuickViewProduct] = useState<any | null>(null)
 
-  // Fetch 40 products on page mount (newest 4 pinned at top)
+  /**
+   * One request for the whole selection — recent arrivals first, then a random
+   * sample across every brand.
+   *
+   * This used to fetch `?page_size=40` and shuffle it locally, which could
+   * never produce a mix: the API orders by brand name, so page 1 of a 4,788
+   * product catalogue is entirely ABB. Shuffling forty ABB products still
+   * gives forty ABB products, which is exactly what the homepage showed.
+   * The sampling now happens server-side across the full catalogue, and it is
+   * redrawn on every request — so a refresh really does show different stock.
+   */
   useEffect(() => {
-    async function loadCatalog() {
-      setLoading(true)
-      try {
-        // 1. Fetch newest products (top 4 latest by -id) to pin at top
-        const newestRes = await getProducts({ page_size: 4, ordering: '-id' })
-        const newestList = newestRes.results || []
-        const newestIds = new Set(newestList.map(p => p.id))
-
-        // 2. Fetch catalog (40 products batch)
-        const catalogRes = await getProducts({ page_size: 40 })
-        const rawCatalog = catalogRes.results || []
-
-        // Filter out items already in newest to avoid duplicates
-        const rotatingPool = shuffleArray(rawCatalog.filter(p => !newestIds.has(p.id)))
-
-        // Combine newest products at top (is_new: true) + rotating catalog slice (total 40)
-        const combined = [
-          ...newestList.map(p => ({ ...p, is_new: true })),
-          ...rotatingPool.map(p => ({ ...p, is_new: false })),
-        ].slice(0, 40)
-
-        setProducts(combined)
-      } catch (err) {
-        console.error('Failed to fetch homepage featured products:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadCatalog()
+    let cancelled = false
+    setLoading(true)
+    getShowcaseProducts()
+      .then(rows => { if (!cancelled) setProducts(rows) })
+      .catch(err => console.error('Failed to fetch homepage products:', err))
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
-
-  // Brand tabs derived from loaded items
-  const FILTERS = ['All', ...Array.from(
-    new Set(products.map(p => p.brand_name || p.brand?.name || '').filter(Boolean))
-  ).slice(0, 8)]
-
-  const filteredProducts = products.filter(p => {
-    if (activeFilter === 'All') return true
-    const brandName = p.brand_name || p.brand?.name || ''
-    return brandName.toLowerCase().includes(activeFilter.toLowerCase())
-  })
 
   return (
     <section className="py-12 sm:py-16 bg-gradient-to-b from-secondary/40 via-background to-secondary/20 relative overflow-hidden">
@@ -78,28 +44,26 @@ export function FeaturedSection() {
               <span className="section-label">Top Picks</span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                Featured Selection (40 Items)
+                Fresh mix on every visit
               </span>
             </div>
             <h2 className="section-title">Featured Products</h2>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex flex-wrap gap-1 bg-card p-1 rounded-lg border border-border w-fit shadow-xs">
-            {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`px-3 py-1.5 min-h-10 sm:min-h-0 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
-                  activeFilter === f
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+          {/* The brand filter tabs that used to sit here are gone.
+              They were derived from whatever forty products happened to load,
+              so with the catalogue ordered by brand they read "All | ABB" and
+              nothing else — a filter offering one choice. Browsing by brand
+              belongs on /brands, which lists all 69. */}
+          <Link
+            href="/products"
+            className="text-xs font-bold text-primary hover:underline shrink-0 inline-flex items-center gap-1.5"
+          >
+            View all products
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
 
         {/* Loading state */}
@@ -121,18 +85,18 @@ export function FeaturedSection() {
               </div>
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-2xl border border-border">
-            <p className="text-muted-foreground text-sm font-medium">No products found for this filter.</p>
-            <button onClick={() => setActiveFilter('All')} className="mt-3 btn-secondary text-xs min-h-10">
-              Show All Products
-            </button>
+            <p className="text-muted-foreground text-sm font-medium">Products are loading — please refresh in a moment.</p>
+            <Link href="/products" className="mt-3 btn-secondary text-xs min-h-10 inline-flex">
+              Browse the full catalog
+            </Link>
           </div>
         ) : (
           /* Product grid — 40 cards directly */
           <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product, idx) => (
+              {products.map((product, idx) => (
                 <motion.div
                   key={product.slug || product.id}
                   layout

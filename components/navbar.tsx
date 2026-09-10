@@ -276,9 +276,9 @@ export function Navbar() {
             </nav>
 
             {/* ══ SEARCH BAR (PERSISTENT & BEAUTIFUL) ══ */}
-            <div ref={searchRef} className="hidden md:block relative flex-1 max-w-sm mx-4">
+            <div ref={searchRef} className="hidden md:block relative flex-1 min-w-0 max-w-xl lg:max-w-2xl mx-3 lg:mx-6">
               <div className="flex items-center border border-border rounded-xl bg-secondary/50 focus-within:bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-[background-color,border-color,box-shadow]">
-                <svg className="w-4.5 h-4.5 text-muted-foreground ml-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-muted-foreground ml-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -287,8 +287,8 @@ export function Navbar() {
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
                   onKeyDown={onSearchKeyDown}
-                  placeholder="Search products, brands, models..."
-                  className="w-full px-3 py-2 text-xs bg-transparent outline-none text-foreground placeholder:text-muted-foreground font-semibold"
+                  placeholder="Search 4,700+ products by name, brand or catalogue number…"
+                  className="w-full px-3 py-2.5 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground font-medium"
                 />
                 {searchQuery && (
                   <button
@@ -402,15 +402,10 @@ export function Navbar() {
                 </svg>
               </button>
 
-              {/* Direct Admin Dashboard Pill button for Admin Users */}
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 min-h-10 rounded-lg bg-[var(--color-admin)] hover:opacity-90 text-white font-extrabold text-xs transition-opacity shadow-sm"
-                >
-                  ⚡ Admin Panel
-                </Link>
-              )}
+              {/* The orange "Admin Panel" pill that sat here is gone. It was a
+                  third route to /admin — the utility bar above and the account
+                  dropdown below both already link there — and its colour
+                  fought the blue account button beside it. */}
 
               {/* Login or My Account dropdown */}
               {isAuthenticated ? (

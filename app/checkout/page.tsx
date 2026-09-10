@@ -387,7 +387,7 @@ export default function CheckoutPage() {
                 )}
                 {parseFloat(orderResult.cod_fee || '0') > 0 && (
                   <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                    <span className="font-semibold">COD Charges</span>
+                    <span className="font-semibold">Cash on Delivery Charges</span>
                     <span className="font-bold">+{formatPrice(parseFloat(orderResult.cod_fee))}</span>
                   </div>
                 )}
@@ -961,7 +961,7 @@ export default function CheckoutPage() {
                       never carries this charge. */}
                   {codFee > 0 && (
                     <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <span>COD Charges</span>
+                      <span>Cash on Delivery Charges</span>
                       <span>+{formatPrice(codFee)}</span>
                     </div>
                   )}

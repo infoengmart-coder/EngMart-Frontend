@@ -16,7 +16,7 @@ import { subscribeEngmartEvents, emitEngmartEvent } from "@/lib/events";
 type OrderStatus =
   | "Pending" | "Confirmed" | "Packaging"
   | "Shipped" | "Delivered" | "Cancelled" | "Return Requested";
-type PaymentStatus = "Paid" | "Unpaid" | "COD";
+type PaymentStatus = "Paid" | "Unpaid" | "Cash on Delivery";
 
 interface OrderProduct {
   slug: string;
@@ -165,7 +165,7 @@ const ALL_STATUS_OPTIONS: OrderStatus[] = [
 const PAYMENT_COLORS: Record<PaymentStatus, string> = {
   Paid: "text-emerald-600 bg-emerald-50 border-emerald-200",
   Unpaid: "text-red-600 bg-red-50 border-red-200",
-  COD: "text-amber-600 bg-amber-50 border-amber-200",
+  "Cash on Delivery": "text-amber-600 bg-amber-50 border-amber-200",
 };
 
 const STATUSES: (OrderStatus | "All")[] = [
@@ -372,7 +372,7 @@ export default function OrdersPage() {
       o.payment_status === "paid"
         ? "Paid"
         : o.payment_method === "cod"
-          ? "COD"
+          ? "Cash on Delivery"
           : "Unpaid";
 
     const methodLabel =

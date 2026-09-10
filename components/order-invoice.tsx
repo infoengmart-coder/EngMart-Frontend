@@ -180,7 +180,7 @@ export function OrderInvoice({ order, site }: OrderInvoiceProps) {
 
           {hasCod && (
             <tr>
-              <td className="py-2 text-right pr-4">COD Charges</td>
+              <td className="py-2 text-right pr-4">Cash on Delivery Charges</td>
               <td className="py-2 text-right">
                 +Rs. {c.codFee.toLocaleString('en-PK')}
               </td>

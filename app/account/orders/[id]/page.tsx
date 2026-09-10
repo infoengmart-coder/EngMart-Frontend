@@ -523,7 +523,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 
                 {c.codFee > 0 && (
                   <div className="flex justify-between text-slate-800">
-                    <span>COD Charges</span>
+                    <span>Cash on Delivery Charges</span>
                     <span>+PKR {c.codFee.toLocaleString('en-PK')}</span>
                   </div>
                 )}

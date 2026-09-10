@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useProductSearch } from '@/lib/use-product-search'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { getProducts, getBrands, getCategories, getProductFilterMeta, Product as ApiProduct, Brand as ApiBrand, Category as ApiCategory, type ProductFilterMeta } from '@/lib/api'
+import { getProducts, getBrands, getCategories, getProductFilterMeta, mediaUrl, formatPrice, Product as ApiProduct, Brand as ApiBrand, Category as ApiCategory, type ProductFilterMeta } from '@/lib/api'
 import { ProductCard } from '@/components/product-card'
 import { useScrollLock } from '@/components/confirm-dialog'
 import { BrandMarquee } from '@/components/brand-marquee'
@@ -221,6 +222,37 @@ function ProductsPageContent({
   // Filter states
   const [searchQuery, setSearchQuery] = useState(urlQuery)
   const [activeSearch, setActiveSearch] = useState(urlQuery)
+
+  /**
+   * Live suggestions, same behaviour as the navbar.
+   *
+   * This page used to need a term typed AND the "Search Catalog" button
+   * clicked before showing anything — two actions on the one page people
+   * arrive at specifically to find a product, while the navbar above it was
+   * already suggesting as you type.
+   */
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const { results: suggestions, searching: suggesting } = useProductSearch(
+    suggestOpen ? searchQuery : '',
+  )
+  const suggestRef = useRef<HTMLDivElement>(null)
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!suggestOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSuggestOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [suggestOpen])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedBrand, setSelectedBrand] = useState<string>('')
   const [sortParam, setSortParam] = useState('relevance')
@@ -358,6 +390,7 @@ function ProductsPageContent({
   }, [urlQuery])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
+    setSuggestOpen(false)
     e.preventDefault()
     const term = searchQuery.trim()
     setPage(1)
@@ -468,7 +501,7 @@ function ProductsPageContent({
         {/* Product Search Bar Section */}
         <div className="mb-8 bg-card p-4 sm:p-6 rounded-xl border border-border shadow-sm">
           <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+            <div ref={suggestRef} className="relative flex-1">
               <svg className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -476,9 +509,74 @@ function ProductsPageContent({
                 type="text"
                 placeholder="Search products by model, brand, spec, or keyword (e.g. NXB-63, ABB, 32A Contactor)..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setSuggestOpen(true) }}
+                onFocus={() => setSuggestOpen(true)}
+                autoComplete="off"
                 className="w-full pl-11 pr-11 py-3 bg-secondary/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
               />
+
+              {/* ── Live suggestions ── */}
+              {suggestOpen && searchQuery.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-card border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+                  {suggesting && suggestions.length === 0 && (
+                    <div className="px-4 py-6 text-center text-xs text-muted-foreground">Searching…</div>
+                  )}
+                  {!suggesting && suggestions.length === 0 && (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-xs font-semibold text-foreground">No match for “{searchQuery.trim()}”</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Try a catalogue number, or press Enter to search the full catalog.
+                      </p>
+                    </div>
+                  )}
+                  {suggestions.length > 0 && (
+                    <ul className="max-h-96 overflow-y-auto overscroll-contain py-1">
+                      {suggestions.map(item => (
+                        <li key={item.slug}>
+                          <Link
+                            href={`/products/${item.slug}`}
+                            onClick={() => setSuggestOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary transition-colors"
+                          >
+                            <span className="w-10 h-10 rounded-lg bg-background border border-border shrink-0 overflow-hidden flex items-center justify-center">
+                              <img
+                                src={item.image ? mediaUrl(item.image) : '/product-placeholder.svg'}
+                                alt=""
+                                loading="lazy"
+                                className="w-full h-full object-contain p-0.5"
+                              />
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-xs font-bold text-foreground truncate">{item.name}</span>
+                              <span className="block text-[11px] text-muted-foreground truncate">
+                                {[item.brand, item.catNo].filter(Boolean).join(' · ')}
+                              </span>
+                            </span>
+                            {item.price ? (
+                              <span className="shrink-0 text-xs font-black text-foreground">
+                                {formatPrice(item.price)}
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[10px] font-bold text-primary">Get quote</span>
+                            )}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {/* Enter still runs a full catalog search — the dropdown is a
+                      shortcut to a known product, not a replacement for it. */}
+                  {suggestions.length > 0 && (
+                    <button
+                      type="submit"
+                      onClick={() => setSuggestOpen(false)}
+                      className="w-full px-4 py-2.5 border-t border-border bg-secondary/40 text-[11px] font-bold text-primary hover:bg-secondary transition-colors text-left cursor-pointer"
+                    >
+                      See all results for “{searchQuery.trim()}” →
+                    </button>
+                  )}
+                </div>
+              )}
               {searchQuery && (
                 <button
                   type="button"
