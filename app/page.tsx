@@ -5,9 +5,11 @@ import { FeaturedSection } from '@/components/featured-section'
 import { Footer } from '@/components/footer'
 import { BrandMarquee } from '@/components/brand-marquee'
 import Link from 'next/link'
+import Image from 'next/image'
 import { CATEGORIES, STATS, TESTIMONIALS } from '@/lib/data'
 import { BRAND_LOGO_ENTRIES } from '@/lib/brand-logos'
 import { WhatsAppCta } from '@/components/whatsapp-cta'
+import { categoryImage } from '@/lib/category-images'
 
 /* ── Stats Strip ── */
 function StatsStrip() {
@@ -49,11 +51,27 @@ function CategorySection() {
               href={`/categories/${cat.slug}`}
               className="store-card group flex flex-col items-center text-center p-4 sm:p-5"
             >
+              {/* Real product photograph, falling back to the emoji for any
+                  category that has not been photographed yet. See
+                  lib/category-images.ts for the precedence rule. */}
               <div
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform duration-200 shadow-sm"
-                style={{ backgroundColor: `${cat.color}15`, border: `1px solid ${cat.color}30` }}
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center mb-3 overflow-hidden bg-white group-hover:scale-105 transition-transform duration-200 shadow-sm"
+                style={{ border: `1px solid ${cat.color}25` }}
               >
-                {cat.icon}
+                {categoryImage(cat.slug) ? (
+                  <Image
+                    src={categoryImage(cat.slug)!}
+                    alt={cat.short}
+                    width={80}
+                    height={80}
+                    // object-contain, never cover: these are catalogue shots on
+                    // a white ground, and cropping one to fill a square cuts
+                    // the product itself off.
+                    className="w-full h-full object-contain p-1.5"
+                  />
+                ) : (
+                  <span className="text-2xl">{cat.icon}</span>
+                )}
               </div>
               <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                 {cat.short}

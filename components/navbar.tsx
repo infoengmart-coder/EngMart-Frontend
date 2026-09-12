@@ -9,6 +9,7 @@ import { CATEGORIES } from '@/lib/data'
 import { getProducts } from '@/lib/api'
 import { useCart } from '@/lib/cart'
 import { useAuth } from '@/lib/auth'
+import { categoryImage } from '@/lib/category-images'
 import { useSiteSettings } from '@/lib/site-settings'
 import { useScrollLock } from '@/components/confirm-dialog'
 import { NotificationBell } from '@/components/notification-bell'
@@ -255,8 +256,20 @@ export function Navbar() {
                       <div className="w-[500px] bg-card border border-border rounded-xl shadow-xl p-4 grid grid-cols-2 gap-2">
                         {CATEGORIES.slice(0, 10).map(cat => (
                           <Link key={cat.slug} href={`/categories/${cat.slug}`} onClick={() => setCatOpen(false)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary transition-colors group/item">
-                            <div className="w-10 h-10 rounded-lg bg-secondary border border-border text-primary flex items-center justify-center text-lg shadow-sm group-hover/item:border-primary/30 group-hover/item:bg-primary/5 transition-colors">
-                              {cat.icon || '⚡'}
+                            {/* Product photo where we have one, emoji otherwise.
+                                Same precedence as the homepage and /categories —
+                                see lib/category-images.ts. */}
+                            <div className="w-11 h-11 rounded-lg bg-white border border-border flex items-center justify-center overflow-hidden shadow-sm group-hover/item:border-primary/30 transition-colors shrink-0">
+                              {categoryImage(cat.slug) ? (
+                                <img
+                                  src={categoryImage(cat.slug)!}
+                                  alt=""
+                                  loading="lazy"
+                                  className="w-full h-full object-contain p-1"
+                                />
+                              ) : (
+                                <span className="text-lg text-primary">{cat.icon || '⚡'}</span>
+                              )}
                             </div>
                             <div>
                               <p className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors leading-tight mb-0.5">{cat.short}</p>

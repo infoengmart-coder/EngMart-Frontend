@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { getCategories, type Category } from '@/lib/api'
+import { getCategories, mediaUrl, type Category } from '@/lib/api'
+import { resolveCategoryImage } from '@/lib/category-images'
 
 const container = {
   hidden: { opacity: 0 },
@@ -170,12 +171,37 @@ export default function CategoriesPage() {
                       className="p-6 flex items-center gap-4 border-b border-border"
                       style={{ background: `linear-gradient(135deg, ${color}08, ${color}03)` }}
                     >
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110"
-                        style={{ background: color, boxShadow: `0 4px 14px ${color}35` }}
-                      >
-                        {cat.icon ? <span>{cat.icon}</span> : getCategoryIcon(short)}
-                      </div>
+                      {/* Full precedence: an image uploaded in the admin wins,
+                          then the bundled product photograph, then the emoji,
+                          then the outline glyph. See lib/category-images.ts.
+
+                          The photo sits on WHITE rather than the category's
+                          accent colour — these are catalogue shots already cut
+                          out on white, and a coloured tile behind one just
+                          shows a white square floating on it. */}
+                      {(() => {
+                        const photo = resolveCategoryImage(
+                          cat.slug,
+                          cat.image ? mediaUrl(cat.image) : null,
+                        )
+                        return photo ? (
+                          <div className="w-16 h-16 rounded-2xl bg-white border border-border flex items-center justify-center overflow-hidden shrink-0 transition-transform duration-300 group-hover:scale-105">
+                            <img
+                              src={photo}
+                              alt={cat.name}
+                              loading="lazy"
+                              className="w-full h-full object-contain p-1.5"
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-transform duration-300 group-hover:scale-110"
+                            style={{ background: color, boxShadow: `0 4px 14px ${color}35` }}
+                          >
+                            {cat.icon ? <span>{cat.icon}</span> : getCategoryIcon(short)}
+                          </div>
+                        )
+                      })()}
                       <div className="flex-1 min-w-0">
                         <h2 className="font-bold text-foreground text-base leading-tight group-hover:text-primary transition-colors">
                           {cat.name}
