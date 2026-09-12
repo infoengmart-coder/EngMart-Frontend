@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo, useDeferredValue } from "react";
 import {
   Plus, Search, Edit, Trash2, Eye,
   Upload, Download, Layers, Tag, Check, AlertCircle, ImagePlus, X,
-  Image as ImageIcon, Loader2
+  Image as ImageIcon, Loader2, Trash, Copy
 } from "lucide-react";
 
 /* ── Image Upload Box ── */
@@ -58,9 +58,27 @@ function ImageUploadBox({
   );
 }
 
-import { getAdminProducts, getBrands, getCategories, createProduct, updateProduct, deleteProduct, uploadProductImage, mediaUrl, Product, Brand, CategoryChild } from "@/lib/api";
+/**
+ * Pull an ampere figure out of a rating label: "32A 3-Pole" -> "32A".
+ *
+ * Stored on the variant's `specs.rating`, which is what the storefront's
+ * `?spec=` filter matches on and what the description generator reads. The
+ * imported catalogue already has it; typing a variant by hand should not
+ * produce a second-class row that filtering cannot see.
+ *
+ * Returns null when there is no ampere value — plenty of variants are rated in
+ * kW, poles or nothing at all, and inventing a rating would be worse than
+ * leaving it unset.
+ */
+function parseRating(label: string): string | null {
+  const match = String(label || "").match(/(\d+(?:\.\d+)?)\s*A\b/i);
+  return match ? `${match[1]}A` : null;
+}
+
+import { getAdminProduct, getAdminProducts, getBrands, getCategories, createProduct, updateProduct, deleteProduct, uploadProductImage, mediaUrl, Product, Brand, CategoryChild } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AdminImageStudio } from "@/components/admin-image-studio";
+import { revalidateProductPages, revalidateAfterProductDelete } from "./actions";
 import { prepareImage, formatBytes } from "@/lib/image-upload";
 
 export default function ProductsPage() {
@@ -88,8 +106,35 @@ export default function ProductsPage() {
   const [formCategoryId, setFormCategoryId] = useState<number | "">("");
   const [formShortDesc, setFormShortDesc] = useState("");
   const [formFullDesc, setFormFullDesc] = useState("");
-  const [formCatNo, setFormCatNo] = useState("");
-  const [formPrice, setFormPrice] = useState<number | "">("");
+  /**
+   * One editable row per ampere rating / model the product is sold in.
+   *
+   * This replaces the single `formCatNo` + `formPrice` pair the form used to
+   * have. A product like the ABB AF Contactor has 22 variants from 30A to
+   * 750A, each with its own catalogue number and price, and the old form could
+   * only ever see the first one — so there was no way to add the rest, and
+   * saving an edit risked leaving them untouched but invisible.
+   *
+   * `description` is the field the storefront dropdown actually shows
+   * ("32A 3-Pole"), which is why it is labelled "Rating" and comes first.
+   */
+  type VariantRow = {
+    /** Present on existing rows; absent on ones added in this session. */
+    id?: number;
+    description: string;
+    cat_no: string;
+    price: string;
+    price_on_request: boolean;
+    specs?: Record<string, string>;
+  };
+
+  const blankVariant = (): VariantRow => ({
+    description: "", cat_no: "", price: "", price_on_request: false,
+  });
+
+  const [formVariants, setFormVariants] = useState<VariantRow[]>([blankVariant()]);
+  /** True while the full variant list is being fetched for an edit. */
+  const [variantsLoading, setVariantsLoading] = useState(false);
   const [formIsActive, setFormIsActive] = useState(true);
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [formImagePreview, setFormImagePreview] = useState<string | undefined>(undefined);
@@ -192,8 +237,7 @@ export default function ProductsPage() {
     if (categories.length > 0) setFormCategoryId(categories[0].id);
     setFormShortDesc("");
     setFormFullDesc("");
-    setFormCatNo("");
-    setFormPrice("");
+    setFormVariants([blankVariant()]);
     setFormIsActive(true);
     setFormIsFeatured(false);
     setFormImagePreview(undefined);
@@ -207,8 +251,41 @@ export default function ProductsPage() {
     setFormBrandId(p.brand?.id || (brands.length > 0 ? brands[0].id : ""));
     setFormCategoryId(p.category?.id || (categories.length > 0 ? categories[0].id : ""));
     setFormShortDesc(p.short_description || "");
-    setFormCatNo(p.first_variant?.cat_no || "");
-    setFormPrice(p.first_variant?.price ? Number(p.first_variant.price) : "");
+    // Seed from the list row so the form paints immediately, then replace with
+    // the complete set. The list endpoint only carries `first_variant`, so
+    // without the fetch below an edit would show one row for a product that
+    // has twenty-two.
+    setFormVariants(
+      p.first_variant
+        ? [{
+            id: p.first_variant.id,
+            description: p.first_variant.description || "",
+            cat_no: p.first_variant.cat_no || "",
+            price: p.first_variant.price ? String(p.first_variant.price) : "",
+            price_on_request: !!p.first_variant.price_on_request,
+            specs: p.first_variant.specs || {},
+          }]
+        : [blankVariant()]
+    );
+    setVariantsLoading(true);
+    getAdminProduct(p.slug)
+      .then(detail => {
+        const rows = (detail.variants || []).map(v => ({
+          id: v.id,
+          description: v.description || "",
+          cat_no: v.cat_no || "",
+          price: v.price ? String(v.price) : "",
+          price_on_request: !!v.price_on_request,
+          specs: v.specs || {},
+        }));
+        setFormVariants(rows.length ? rows : [blankVariant()]);
+      })
+      .catch(() => {
+        // Keep the seeded row rather than emptying the form — a failed fetch
+        // must not look like "this product has no variants".
+        setActionError("Could not load the full variant list. Only the first variant is shown; saving now would not remove the others.");
+      })
+      .finally(() => setVariantsLoading(false));
     setFormIsActive(true);
     setFormIsFeatured(p.is_featured);
     setFormImagePreview(p.image || undefined);
@@ -216,6 +293,31 @@ export default function ProductsPage() {
     setImagePreview(p.image ? mediaUrl(p.image) : "");
     if (imageInputRef.current) imageInputRef.current.value = "";
     setShowAddForm(true);
+  };
+
+  /** Patch one variant row in place. */
+  const updateVariant = (index: number, patch: Partial<VariantRow>) => {
+    setFormVariants(prev => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+
+  /**
+   * Copy a row, minus its id.
+   *
+   * Ratings in a series differ by a couple of characters ("NXB-63-3P-32A" ->
+   * "...-40A"), so duplicating and editing is far quicker than retyping. The id
+   * must be dropped or the backend would update the original instead of
+   * creating a second variant.
+   */
+  const duplicateVariant = (index: number) => {
+    setFormVariants(prev => {
+      const copy = { ...prev[index] };
+      delete copy.id;
+      return [...prev.slice(0, index + 1), copy, ...prev.slice(index + 1)];
+    });
+  };
+
+  const removeVariant = (index: number) => {
+    setFormVariants(prev => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
   };
 
   const handlePickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,20 +357,43 @@ export default function ProductsPage() {
         is_featured: formIsFeatured,
       };
 
-      if (formCatNo) {
-        const variantPayload: any = {
-          cat_no: formCatNo,
-          description: formName,
-          price: formPrice !== "" ? Number(formPrice) : null,
-          price_on_request: formPrice === "" || Number(formPrice) === 0,
-        };
-        // Carry the existing variant id when editing so the backend updates
-        // this row instead of appending a duplicate on every save.
-        if (editingProduct?.first_variant?.id) {
-          variantPayload.id = editingProduct.first_variant.id;
-        }
-        payload.variants = [variantPayload];
+      // ── Variants ──
+      // Rows with nothing typed in them are dropped rather than saved as blank
+      // variants; an admin who adds a row and changes their mind should not end
+      // up with an empty option in the storefront dropdown.
+      const rows = formVariants.filter(v => v.description.trim() || v.cat_no.trim());
+      if (rows.length === 0) {
+        setActionError("Add at least one variant — a rating or a catalogue number.");
+        setSubmitting(false);
+        return;
       }
+
+      payload.variants = rows.map((v, index) => {
+        const priceValue = v.price.trim() === "" ? null : Number(v.price);
+        const onRequest = v.price_on_request || priceValue === null || priceValue === 0;
+        const out: any = {
+          // The storefront dropdown renders `description || cat_no`, so a row
+          // with only a catalogue number still reads sensibly.
+          description: v.description.trim() || v.cat_no.trim(),
+          cat_no: v.cat_no.trim(),
+          price: onRequest ? null : priceValue,
+          price_on_request: onRequest,
+          // Keep the ampere figure in specs too. The storefront's `?spec=`
+          // filter and the description generator both read specs.rating, so a
+          // variant added here behaves like the imported ones instead of being
+          // invisible to filtering.
+          specs: { ...(v.specs || {}), ...(parseRating(v.description) ? { rating: parseRating(v.description)! } : {}) },
+          order: index,
+        };
+        // Carrying the id updates that row rather than appending a duplicate.
+        if (v.id) out.id = v.id;
+        return out;
+      });
+
+      // Tells the API this list is the COMPLETE set, so a row removed here is
+      // actually deleted. Without it the backend upserts only, by design —
+      // see ProductAdminSerializer.update.
+      if (editingProduct) payload.variants_replace = true;
 
       const saved = editingProduct
         ? await updateProduct(editingProduct.slug, payload)
@@ -292,7 +417,24 @@ export default function ProductsPage() {
 
       // Patch the single row rather than refetching the catalog — the response
       // already contains everything that changed.
-      patchProduct(withImage || saved);
+      const savedProduct = withImage || saved;
+      patchProduct(savedProduct);
+
+      // Drop the storefront's cached pages NOW.
+      //
+      // Without this the customer-facing product page keeps serving whatever
+      // Vercel last rendered, and because Next serves that
+      // stale-while-revalidate the edit only appears two or three reloads
+      // later — the "why do I have to reload to see my change" complaint.
+      //
+      // Awaited, so the button stays in its saving state until the purge is
+      // done and the page really is fresh by the time the form closes. It
+      // cannot throw, and the product is already saved regardless.
+      await revalidateProductPages(
+        savedProduct?.slug || editingProduct?.slug || "",
+        savedProduct?.category?.slug || editingProduct?.category?.slug || null,
+        savedProduct?.brand?.slug || editingProduct?.brand?.slug || null,
+      );
 
       setShowAddForm(false);
       setImageFile(null);
@@ -314,6 +456,9 @@ export default function ProductsPage() {
       // Same reasoning as saving: remove the row locally instead of
       // re-downloading the whole catalog to discover it is gone.
       setProducts(prev => prev.filter(p => p.slug !== pendingDeleteSlug));
+      // A deleted product's URL should 404 immediately, not keep serving a
+      // cached page for the next two minutes.
+      await revalidateAfterProductDelete(pendingDeleteSlug);
     } catch (err: any) {
       setActionError(err.message || "Failed to delete product");
     } finally {
@@ -535,11 +680,6 @@ export default function ProductsPage() {
                   className="input-base text-xs" placeholder="e.g. CHINT NXB-63 MCB 1P 16A" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Catalog No (SKU)</label>
-                <input type="text" required value={formCatNo} onChange={e => setFormCatNo(e.target.value)}
-                  className="input-base text-xs" placeholder="e.g. NXB-63-1P-16A" />
-              </div>
-              <div>
                 <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Brand</label>
                 <select value={formBrandId} onChange={e => setFormBrandId(Number(e.target.value))} className="input-base text-xs">
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -550,10 +690,6 @@ export default function ProductsPage() {
                 <select value={formCategoryId} onChange={e => setFormCategoryId(Number(e.target.value))} className="input-base text-xs">
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Price (PKR)</label>
-                <input type="number" value={formPrice} onChange={e => setFormPrice(e.target.value ? Number(e.target.value) : "")} className="input-base text-xs" placeholder="Leave empty for POR" />
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Short Description</label>
@@ -570,6 +706,126 @@ export default function ProductsPage() {
                   <option value="Draft">Draft (Hidden)</option>
                 </select>
               </div>
+            </div>
+          </div>
+
+          {/* ── Ratings & pricing ──
+              One row per ampere rating / model. These become the options in
+              the "Select Variant / Ampere Rating" dropdown on the product page,
+              and each carries its own catalogue number and price. */}
+          <div className="border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Ratings &amp; Pricing</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Add a row per ampere rating. Customers pick between these in the dropdown on the product page.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {variantsLoading
+                  ? "Loading all variants…"
+                  : `${formVariants.length} variant${formVariants.length === 1 ? "" : "s"}`}
+              </span>
+            </div>
+
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs min-w-[640px]">
+                <thead>
+                  <tr className="text-[10px] uppercase text-muted-foreground">
+                    <th className="text-left font-semibold pb-1.5 w-[34%]">Rating / Description *</th>
+                    <th className="text-left font-semibold pb-1.5 w-[28%]">Catalogue No</th>
+                    <th className="text-left font-semibold pb-1.5 w-[22%]">Price (PKR)</th>
+                    <th className="text-center font-semibold pb-1.5 w-[10%]">On request</th>
+                    <th className="pb-1.5 w-[6%]" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {formVariants.map((v, i) => (
+                    <tr key={v.id ?? `new-${i}`}>
+                      <td className="pr-2 pb-2">
+                        <input
+                          type="text"
+                          value={v.description}
+                          onChange={e => updateVariant(i, { description: e.target.value })}
+                          className="input-base text-xs w-full"
+                          placeholder="e.g. 32A 3-Pole"
+                        />
+                      </td>
+                      <td className="pr-2 pb-2">
+                        <input
+                          type="text"
+                          value={v.cat_no}
+                          onChange={e => updateVariant(i, { cat_no: e.target.value })}
+                          className="input-base text-xs w-full font-mono"
+                          placeholder="e.g. NXB-63-3P-32A"
+                        />
+                      </td>
+                      <td className="pr-2 pb-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={v.price}
+                          disabled={v.price_on_request}
+                          onChange={e => updateVariant(i, { price: e.target.value })}
+                          className="input-base text-xs w-full disabled:opacity-40"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="pb-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={v.price_on_request}
+                          onChange={e => updateVariant(i, {
+                            price_on_request: e.target.checked,
+                            // Clear the price when switching to POR, so a
+                            // stale figure cannot be saved behind the flag.
+                            ...(e.target.checked ? { price: "" } : {}),
+                          })}
+                          className="w-4 h-4 rounded cursor-pointer"
+                          title="Price on request"
+                        />
+                      </td>
+                      <td className="pb-2 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            title="Duplicate this row"
+                            onClick={() => duplicateVariant(i)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            title="Remove this variant"
+                            // Never remove the last row: a product with no
+                            // variants has no price anywhere on the storefront.
+                            disabled={formVariants.length === 1}
+                            onClick={() => removeVariant(i)}
+                            className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setFormVariants(prev => [...prev, blankVariant()])}
+                className="btn-secondary text-xs inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add rating
+              </button>
+              <span className="text-[11px] text-muted-foreground">
+                Tick “on request” to show “Price on Request” instead of a figure.
+                {editingProduct && " Removing a row here deletes that variant when you save."}
+              </span>
             </div>
           </div>
 

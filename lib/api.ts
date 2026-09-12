@@ -678,6 +678,21 @@ export async function createProduct(data: any): Promise<ProductDetail> {
  * This goes through authFetch: token attached, `cache: 'no-store'`, and
  * `?all=true` so drafts are visible to the person who created them.
  */
+/**
+ * One product with its FULL variant list, for the admin edit form.
+ *
+ * The admin list endpoint only carries `first_variant`, so opening the edit
+ * form from a list row could only ever show one variant — which is why the
+ * form used to edit a single cat_no/price and silently ignored the other
+ * twenty-one a product might have.
+ *
+ * Uses authFetch with `?all=true` so a Draft product can be edited too, and so
+ * the response is never served from the public stale-while-revalidate cache.
+ */
+export async function getAdminProduct(slug: string): Promise<ProductDetail> {
+  return authFetch<ProductDetail>(`/products/${slug}/?all=true`)
+}
+
 export async function getAdminProducts(
   params: { page?: number; page_size?: number } = {},
 ): Promise<PaginatedResponse<Product>> {

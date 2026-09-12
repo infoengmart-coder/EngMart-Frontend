@@ -18,11 +18,21 @@ import ProductDetailClient from './product-detail-client'
 // Rendered on demand and cached. Statically generating 4,788 product pages
 // would make every deploy take hours; this gives the same crawler-visible HTML
 // with a build that finishes.
-// A literal, not the shared CATALOG_REVALIDATE constant: Next.js statically
-// analyses segment config exports at build time and rejects an imported
-// value outright ("Invalid segment configuration export detected").
-// Keep this in step with CATALOG_REVALIDATE in lib/catalog-server.ts.
-export const revalidate = 600
+// 120s, not 600s.
+//
+// This is now only the SAFETY NET: apps/common/revalidate.py purges the exact
+// path the moment a product changes, so an edit is live immediately. The timer
+// only matters for writes that bypass the API (a direct SQL change, a Django
+// admin action on a model without the mixin) or if the purge call fails.
+//
+// It was 600s, and because Next serves this cache stale-while-revalidate that
+// meant an edit could take two or three reloads to appear for up to ten
+// minutes. Two minutes keeps most of the caching benefit while bounding the
+// worst case to something a person would not file a bug about.
+//
+// A literal, not an imported constant: Next statically analyses segment config
+// exports and rejects anything it cannot read at build time.
+export const revalidate = 120
 
 export default async function ProductPage({
   params,
